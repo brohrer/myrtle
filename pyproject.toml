@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rtrl_bench"
+version = "0.0"
+authors = [
+  { name="Brandon Rohrer", email="brohrer@gmail.com" },
+]
+description = "A benchmarking framework for real time reinforcement learning"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
