@@ -16,7 +16,7 @@ git clone https://codeberg.org/brohrer/rtrl_bench.git
 
 ```bash
 python3 -m pip install --upgrade pip
-python3 -m pip install -e rtrl_bench
+python3 -m pip install --editable rtrl_bench
 ```
 
 ## Usage
@@ -29,8 +29,11 @@ rtrl_bench.run(AgentClass, WorldClass)
 ```
 
 where `AgentClass` and `WorldClass` are each classes containing a `run(queue)`
-method that accepts a `multiprocessing.Queue` as its only argument.
-([Queue documentation](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue)) 
+method that accepts a `multiprocessing.Queue` as its only argument.<br/>
+[Queue documentation](https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue)<br/>
+Requirements for
+[AgentClass](https://codeberg.org/brohrer/rtrl_bench/src/agents/branch/main/README.md)
+[WorldClass](https://codeberg.org/brohrer/rtrl_bench/src/worlds/branch/main/README.md)
 
 ## Testing
 
