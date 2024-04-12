@@ -8,10 +8,11 @@ version = "0.0"
 authors = [
   { name="Brandon Rohrer", email="brohrer@gmail.com" },
 ]
-description = "A benchmarking framework for real time reinforcement learning"
+description = "A benchmarking framework for real-time RL with multiple intermittent rewards"
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
+    "numpy",
     "pacemaker-lite",
 ]
 classifiers = [
@@ -24,4 +25,3 @@ classifiers = [
 addopts = [
     "--import-mode=importlib",
 ]
-
