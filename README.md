@@ -3,7 +3,14 @@
 
 Connects a real-time environment with an agent via a Queue and runs them.
 Runs on Linux.
-[Not compatible](https://docs.python.org/3/library/multiprocessing.html)
+
+* [Getting Started](#getting-started)
+* [Creating Agents](#agents)
+* [Creating Worlds](#worlds)
+
+# Getting started
+**Heads up**: Myrtle is
+[not compatible](https://docs.python.org/3/library/multiprocessing.html)
 with Windows or MacOS due to the fact that it starts new
 processes with `os.fork()`.
 
@@ -33,9 +40,6 @@ from myrtle import bench
 bench.run(AgentClass, WorldClass)
 ```
 
-More on [AgentClass](#agents)
-and [WorldClass](#worlds).
-
 
 ## Project layout
 
@@ -53,7 +57,7 @@ tests/
     README.md
     base_agent_test.py
     base_world_test.py
-    test_test.py
+    bench_test.py
     ...
 ```
 
@@ -69,7 +73,7 @@ pytest
 ```
 
 
-## Agents
+# Agents
 
 An Agent class has a few defining characteristics, implemented in
 [`base_agent.py`](https://codeberg.org/brohrer/myrtle/src/branch/main/src/myrtle/agents/base_agent.py).
@@ -95,14 +99,14 @@ Messages that can be passed to and by and agent follow the conventions
  of [OpenAI Gym](https://github.com/openai/gym). 
 
 
-## Worlds
+# Worlds
 
 To be compatible with the Myrtle benchmark framework, world classes have to have a few
 characteristics. There is a skeleton implementation in
 [`base_world.py`](base_world.py)
 to use as a starting place. 
 
-### Attributes
+## Attributes
 
 * `n_sensors`: `int`, a member variable with the number of sensors, the size of
 the array that the world will be providing each iteration.
@@ -119,7 +123,7 @@ it allows for individual rewards to be missing on any given time step.
 See page 10 of [this paper](https://brandonrohrer.com/cartographer) for
 a bit more context
 
-### Initialization
+## Initialization
 
 A World class should be initializable with a two keyword arguments, 
 [multiprocessing Queues](
@@ -127,7 +131,7 @@ https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue),
 "sensor\_q" is the Queue for providing sensor and reward information,
 and "action\_q" is the Queue for receiving action information.
 
-### Real-time
+## Real-time
 
 A good world for benchmarking with Myrtle will be tied to a wall clock
 in some way. In a perfect world, there is physical hardware involved.
