@@ -1,32 +1,27 @@
 import sqlite3
 import time
 import numpy as np
-from pacemaker.pacemaker import Pacemaker
 from sqlogging import logging
 
-N_SENSORS = 13
-N_ACTIONS = 5
-N_REWARDS = 3
-STEPS_PER_SECOND = 5
-N_TIME_STEPS = 93  # Number of time steps to run in a single episode
-N_EPISODES = 4
 
-
-class BaseWorld:
+class BaseAgent:
     def __init__(
             self,
+            n_sensors=None,
+            n_actions=None,
+            n_rewards=None,
             sensor_q=None,
             action_q=None,
+            log_name=None,
             log_dir=".",
             logging_level="info",
     ):
-        self.n_sensors = N_SENSORS
-        self.n_actions = N_ACTIONS
-        self.n_rewards = N_REWARDS
+        self.n_sensors = n_sensors
+        self.n_actions = n_actions
+        self.n_rewards = n_rewards
         self.sensor_q = sensor_q
         self.action_q = action_q
 
-        self.pm = Pacemaker(STEPS_PER_SECOND)
         self.initialize_log(log_name, log_dir, logging_level)
 
         self.i_episode = -1
@@ -34,43 +29,58 @@ class BaseWorld:
 
     def reset(self):
         self.sensors = np.zeros(self.n_sensors)
+        self.rewards = np.zeros(self.n_rewards)
         self.actions = np.zeros(self.n_actions)
-        self.rewards = [0] * self.n_rewards
         self.i_step = 0
         self.i_episode += 1
 
     def run(self):
-        while self.i_episode < N_EPISODES
-            while self.i_step < N_TIME_STEPS:
+        while True:
+            # It's possible that there may be more than one batch of sensor
+            # information. The agent will have to handle that case.
+            # Wait around until there is at least one batch.
+            msg = self.sensor_q.get()
+            # If the agent needs to be reset or shut down, handle that.
+            try:
+                if msg["terminated"]:
+                    self.close()
+                    break
+            except KeyError:
+                pass
+            try:
+                if msg["truncated"]:
+                    self.reset()
+            except KeyError:
+                pass
 
-                # Read q
-                # If all goes well, there should be exactly one action
-                # array in the queue.
-                # If multiple, use the last and ignore others.
-                # If none, use an all-zeros action. 
-                self.actions = np.zeros(self.n_actions)
-                while not action_q.is_empty():
-                    msg = action_q.get()
-                    self.actions = msg["actions"]
-
+            # Then check to see if there are are any others.
+            while not self.sensor_q.empty():
+                msg = self.sensor_q.get()
+                # It's important to check for termination or truncation in every
+                # message. Missing one of them is bad news.
                 try:
-                    self.sensors = msg["sensors"]
+                    if msg["terminated"]:
+                        self.close()
+                        break
                 except KeyError:
                     pass
                 try:
-                    self.rewards = msg["rewards"]
+                    if msg["truncated"]:
+                        self.reset()
                 except KeyError:
                     pass
 
-                self.step()
-                self.action_q.put({"actions": self.actions})
+            try:
+                self.sensors = msg["sensors"]
+            except KeyError:
+                pass
+            try:
+                self.rewards = msg["rewards"]
+            except KeyError:
+                pass
 
-
-            self.action_q.put({"truncated": True})
-            self.reset()
-
-        self.action_q.put({"terminated": True})
-        self.close()
+            self.step()
+            self.action_q.put({"actions": self.actions})
 
     def step(self):
         self.i_step += 1
