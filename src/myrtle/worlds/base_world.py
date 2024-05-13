@@ -40,7 +40,7 @@ class BaseWorld:
         self.i_episode += 1
 
     def run(self):
-        while self.i_episode < N_EPISODES
+        while self.i_episode < N_EPISODES:
             while self.i_step < N_TIME_STEPS:
 
                 # Read q

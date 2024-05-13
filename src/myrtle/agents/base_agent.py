@@ -29,7 +29,7 @@ class BaseAgent:
 
     def reset(self):
         self.sensors = np.zeros(self.n_sensors)
-        self.rewards = np.zeros(self.n_rewards)
+        self.rewards = [0] * self.n_rewards
         self.actions = np.zeros(self.n_actions)
         self.i_step = 0
         self.i_episode += 1

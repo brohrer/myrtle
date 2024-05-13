@@ -8,12 +8,11 @@ Myrtle connects a real-time environment with an agent via a Queue and runs them.
 - [Creating Worlds](#worlds)
 - [Creating Agents](#agents)
 
-#### Linux only
-**Heads up**: Myrtle is
-not compatible
+#### Heads Up
+Myrtle runs on Linux only. It is not compatible
 with Windows or MacOS due to the fact that it starts new
 processes with `os.fork()`.
-[Forking issue is detailed here.](https://docs.python.org/3/library/multiprocessing.html)
+[Forking behavior is detailed here.](https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods)
 
 # Getting started
 
@@ -66,14 +65,7 @@ tests/
 
 The `run()` function in `bench.py` is the entry point.
 
-## Testing
-
-Run the test suite with pytest.
-
-```bash
-cd myrtle
-pytest
-```
+Run the test suite with `pytest`.
 
 # Worlds
 
@@ -159,7 +151,7 @@ described above for Worlds.
 - `action_q`: [`multiprocessing.Queue`](
     https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue)
 
-# Methods
+## `run()` method
 
 Every Agent contains a `run()` method. This is the method that gets
 called by the benchmarking code.
@@ -169,12 +161,22 @@ receives the message from the World to do otherwise..
 ## Messaging
 
 Communication with the agent is conducted through the Queues.
-Through `action_q`
-the agent passes messages in the form of a `dict` 
+Through the `sensor_q` the World passes sensor and reward information to the
+Agent.  Through the `action_q` the Agent passes action commands back to the World.
 
-Messages that can be passed to and by and agent follow the conventions
- of [OpenAI Gym](https://github.com/openai/gym). 
+Roughly following the conventions of [OpenAI Gym](https://github.com/openai/gym),
+messages through the `sensor_q` are dicts with one or more of the following 
+key-value pairs.
 
+- `sensors`: Numpy `Array`, the values of all sensors.
+- `rewards`: `List`, the values of each reward. Some or all of them may be `None`.
+- `truncated`: `bool`, flag that the current episode has ended and another is being kicked off.
+- `terminated` `bool`, flag that all episodes have ended, and no more `sensor_q`
+messages will be sent.
+
+Messages through the `action_q` are dicts with a single key-value pair.
+
+- `actions`: Numpy `Array`, the values of all commanded actions.
 
 
 ## Multiprocess coordination
@@ -192,4 +194,3 @@ This means that the Agent must be able to handle the case where
 the World has provided multiple sensor/reward updates since
 the previous iteration. It also means that the World must be prepared to have 
 one, zero, or multiple action commands from the Agent.
-
