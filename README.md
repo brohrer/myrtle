@@ -104,11 +104,11 @@ https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue),
 `sensor_q` is the Queue for passing messages from the world to the agent.
 It provides sensor and reward information, as well as information about whether
 a the current episode has terminated, or the world has ceased to exist altogether.
-[More detail here.](#sensor-q-messaging)
+[More detail here.](#sensor-q-messages)
 
 `action_q` is the Queue for passing messages from the agent to world.
 It informs the world of the actions the agent has chosen to take.
-[More detail here.](#action-q-messaging)
+[More detail here.](#action-q-messages)
 
 ## Methods
 
