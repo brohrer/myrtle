@@ -4,9 +4,9 @@
 Connects a real-time environment with an agent via a Queue and runs them.
 Runs on Linux.
 
-* [Getting Started](#getting-started)
-* [Creating Agents](#agents)
-* [Creating Worlds](#worlds)
+- [Getting Started](#getting-started)
+- [Creating Worlds](#worlds)
+- [Creating Agents](#agents)
 
 # Getting started
 **Heads up**: Myrtle is
@@ -72,33 +72,6 @@ cd myrtle
 pytest
 ```
 
-
-# Agents
-
-An Agent class has a few defining characteristics, implemented in
-[`base_agent.py`](https://codeberg.org/brohrer/myrtle/src/branch/main/src/myrtle/agents/base_agent.py).
-
-- Initializes with named arguments
-    - `n_sensors`, `int`
-    - `n_actions`, `int`
-    - `n_rewards`, `int`
-    - `sensor_q`, [`multiprocessing.Queue`](
-        https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue)
-    - `action_q`, [`multiprocessing.Queue`](
-        https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue)
-- Contains a `run()` method.
-
-By convention the `run()` method runs on an infinite loop.
-
-Communication with the agent is conducted through the Queues.
-The messaf
-Through `action_q`
-the agent passes messages in the form of a `dict` 
-
-Messages that can be passed to and by and agent follow the conventions
- of [OpenAI Gym](https://github.com/openai/gym). 
-
-
 # Worlds
 
 To be compatible with the Myrtle benchmark framework, world classes have to have a few
@@ -108,11 +81,12 @@ to use as a starting place.
 
 ## Attributes
 
-* `n_sensors`: `int`, a member variable with the number of sensors, the size of
+- `n_sensors`: `int`, a member variable with the number of sensors, the size of
 the array that the world will be providing each iteration.
-* `n_actions`: `int`, a member variable with the number of actions, the size of
+- `n_actions`: `int`, a member variable with the number of actions, the size of
 the array that the world will be expecting each iteration.
-* `n_rewards (optional)`: `int`, a member variable with the number of rewards, the length of
+- `n_rewards (optional)`: `int`, a member variable with
+the number of rewards, the length of
 the reward list that the world will be providing each iteration. If not provided,
 it is assumed to be the traditional 1.
 
@@ -128,8 +102,20 @@ a bit more context
 A World class should be initializable with a two keyword arguments, 
 [multiprocessing Queues](
 https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue),
-"sensor\_q" is the Queue for providing sensor and reward information,
-and "action\_q" is the Queue for receiving action information.
+`sensor\_q` and `action\_q`.
+
+`sensor\_q` is the Queue for passing messages from the world to the agent.
+It provides sensor and reward information, as well as information about whether
+a the current episode has terminated, or the world has ceased to exist altogether.
+
+`action\_q` is the Queue for passing messages from the agent to world.
+It informs the world of the actions the agent has chosen to take.
+
+## Methods
+
+Every World contains a `run()` method. This is what the benchmark calls.
+It will determine how long the World runs, how many many times it starts over at
+the beginning (episodes), and everything else about what is run during benchmarking:
 
 ## Real-time
 
@@ -149,6 +135,42 @@ from pacemaker.pacemaker import Pacemaker
 ```
 
 and use the `Pacemaker.beat()` method to keep time. 
+
+# Agents
+
+An Agent class has a few defining characteristics. For an example of how
+these can be implemented, check out
+[`base_agent.py`](https://codeberg.org/brohrer/myrtle/src/branch/main/src/myrtle/agents/base_agent.py).
+
+## Initialization
+An Agent initializes with at least these named arguments, the same as 
+described above for Worlds.
+
+- `n_sensors`: `int`
+- `n_actions`: `int`
+- `n_rewards (optional)`: `int`
+- `sensor_q`: [`multiprocessing.Queue`](
+    https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue)
+- `action_q`: [`multiprocessing.Queue`](
+    https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue)
+
+# Methods
+
+Every Agent contains a `run()` method. This is the method that gets
+called by the benchmarking code.
+By convention the `run()` method runs on an infinite loop, at least until it
+receives the message from the World to do otherwise..
+
+## Messaging
+
+Communication with the agent is conducted through the Queues.
+Through `action_q`
+the agent passes messages in the form of a `dict` 
+
+Messages that can be passed to and by and agent follow the conventions
+ of [OpenAI Gym](https://github.com/openai/gym). 
+
+
 
 ## Multiprocess coordination
 
