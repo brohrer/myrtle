@@ -1,18 +1,21 @@
 # Myrtle
-## Multiple Intermittent Reward, Real-Time Reinforcement Learning Benchmark Framework
+A [real-time](#real-time) reinforcement learning benchmark framework that allows for
+[multiple and intermittent rewards](#multiple-and-intermittent-rewards).
 
-Connects a real-time environment with an agent via a Queue and runs them.
-Runs on Linux.
+Myrtle connects a real-time environment with an agent via a Queue and runs them.
 
 - [Getting Started](#getting-started)
 - [Creating Worlds](#worlds)
 - [Creating Agents](#agents)
 
-# Getting started
+#### Linux only
 **Heads up**: Myrtle is
-[not compatible](https://docs.python.org/3/library/multiprocessing.html)
+not compatible
 with Windows or MacOS due to the fact that it starts new
 processes with `os.fork()`.
+[Forking issue is detailed here.](https://docs.python.org/3/library/multiprocessing.html)
+
+# Getting started
 
 ## Install for off-the-shelf use
 
@@ -89,6 +92,8 @@ the array that the world will be expecting each iteration.
 the number of rewards, the length of
 the reward list that the world will be providing each iteration. If not provided,
 it is assumed to be the traditional 1.
+
+### Multiple and intermittent rewards
 
 Having the possibility of more than one reward is a departure
 from the typical RL problem formulation and, as far as I know,
