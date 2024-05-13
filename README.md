@@ -162,7 +162,7 @@ receives the message from the World that its services are no longer needed.
 
 ## Messaging
 
-Communication with the agent is conducted through the Queues.
+Communication between the Agent and the World is conducted through the Queues.
 Through the `sensor_q` the World passes sensor and reward information to the
 Agent.  Through the `action_q` the Agent passes action commands back to the World.
 
