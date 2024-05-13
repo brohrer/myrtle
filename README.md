@@ -99,14 +99,16 @@ a bit more context
 A World class should be initializable with a two keyword arguments, 
 [multiprocessing Queues](
 https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue),
-`sensor\_q` and `action\_q`.
+`sensor_q` and `action_q`.
 
-`sensor\_q` is the Queue for passing messages from the world to the agent.
+`sensor_q` is the Queue for passing messages from the world to the agent.
 It provides sensor and reward information, as well as information about whether
 a the current episode has terminated, or the world has ceased to exist altogether.
+[More detail here.](#sensor-q-messaging)
 
-`action\_q` is the Queue for passing messages from the agent to world.
+`action_q` is the Queue for passing messages from the agent to world.
 It informs the world of the actions the agent has chosen to take.
+[More detail here.](#action-q-messaging)
 
 ## Methods
 
@@ -156,7 +158,7 @@ described above for Worlds.
 Every Agent contains a `run()` method. This is the method that gets
 called by the benchmarking code.
 By convention the `run()` method runs on an infinite loop, at least until it
-receives the message from the World to do otherwise..
+receives the message from the World that its services are no longer needed.
 
 ## Messaging
 
@@ -164,19 +166,23 @@ Communication with the agent is conducted through the Queues.
 Through the `sensor_q` the World passes sensor and reward information to the
 Agent.  Through the `action_q` the Agent passes action commands back to the World.
 
+### `sensor_q` messages
+
 Roughly following the conventions of [OpenAI Gym](https://github.com/openai/gym),
 messages through the `sensor_q` are dicts with one or more of the following 
 key-value pairs.
 
-- `sensors`: Numpy `Array`, the values of all sensors.
-- `rewards`: `List`, the values of each reward. Some or all of them may be `None`.
-- `truncated`: `bool`, flag that the current episode has ended and another is being kicked off.
-- `terminated` `bool`, flag that all episodes have ended, and no more `sensor_q`
+- "`sensors`": `numpy.Array`, the values of all sensors.
+- "`rewards`": `List`, the values of each reward. Some or all of them may be `None`.
+- "`truncated`": `bool`, flag that the current episode has ended and another is being kicked off.
+- "`terminated`": `bool`, flag that all episodes have ended, and no more `sensor_q`
 messages will be sent.
+
+### `action_q` messages
 
 Messages through the `action_q` are dicts with a single key-value pair.
 
-- `actions`: Numpy `Array`, the values of all commanded actions.
+- "`actions`": `numpy.Array`, the values of all commanded actions.
 
 
 ## Multiprocess coordination
