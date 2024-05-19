@@ -97,7 +97,7 @@ def test_reset():
     agent.reset()
     assert agent.i_step == 0
 
-    agent.close()
+    agent.logger.delete()
 
 
 def test_reset_through_sensor_q():

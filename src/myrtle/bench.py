@@ -35,9 +35,15 @@ def run(Agent, World, timeout=None):
     if timeout is not None:
         world_exit = p_world.join(timeout)
         agent_exit = p_agent.join(timeout)
+        p_agent.kill()
+        time.sleep(PAUSE)
+        p_agent.close()
     else:
         world_exit = p_world.join()
         agent_exit = p_agent.join()
+        p_agent.kill()
+        time.sleep(PAUSE)
+        p_agent.close()
 
     if world_exit is None or agent_exit is None:
         exitcode = 1
@@ -46,4 +52,5 @@ def run(Agent, World, timeout=None):
     else: 
         exitcode = 1
 
-    return exitcode
+    # return exitcode
+    return world_exit

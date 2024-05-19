@@ -1,4 +1,5 @@
 import sqlite3
+import sys
 import time
 import numpy as np
 from pacemaker.pacemaker import Pacemaker
@@ -8,8 +9,8 @@ N_SENSORS = 13
 N_ACTIONS = 5
 N_REWARDS = 3
 STEPS_PER_SECOND = 5
-N_TIME_STEPS = 93  # Number of time steps to run in a single episode
-N_EPISODES = 4
+N_TIME_STEPS = 11  # Number of time steps to run in a single episode
+N_EPISODES = 2
 
 
 class BaseWorld:
@@ -17,6 +18,7 @@ class BaseWorld:
             self,
             sensor_q=None,
             action_q=None,
+            log_name=None,
             log_dir=".",
             logging_level="info",
     ):
@@ -42,6 +44,7 @@ class BaseWorld:
     def run(self):
         while self.i_episode < N_EPISODES:
             while self.i_step < N_TIME_STEPS:
+                self.pm.beat()
 
                 # Read q
                 # If all goes well, there should be exactly one action
@@ -49,35 +52,36 @@ class BaseWorld:
                 # If multiple, use the last and ignore others.
                 # If none, use an all-zeros action. 
                 self.actions = np.zeros(self.n_actions)
-                while not action_q.is_empty():
-                    msg = action_q.get()
+                while not self.action_q.empty():
+                    msg = self.action_q.get()
                     self.actions = msg["actions"]
 
-                try:
-                    self.sensors = msg["sensors"]
-                except KeyError:
-                    pass
-                try:
-                    self.rewards = msg["rewards"]
-                except KeyError:
-                    pass
-
                 self.step()
-                self.action_q.put({"actions": self.actions})
+                self.sensor_q.put({"sensors": self.sensors, "rewards": self.rewards})
 
-
-            self.action_q.put({"truncated": True})
             self.reset()
 
-        self.action_q.put({"terminated": True})
         self.close()
 
     def step(self):
         self.i_step += 1
-        # Pick a random action.
-        self.actions = np.zeros(self.n_actions)
-        i_action = np.random.choice(self.n_actions)
-        self.actions[i_action] = 1
+
+        try:
+            i_action = np.where(self.actions)[0][0]
+        except IndexError:
+            i_action = 1
+
+        # Some arbitrary, but deterministic behavior.
+        self.sensors  = np.zeros(self.n_sensors)
+        self.sensors[:self.n_actions] = self.actions
+        self.sensors[self.n_actions: 2 * self.n_actions] = .8 * self.actions - .3
+
+        self.rewards = [0] * self.n_rewards
+        self.rewards[0] = i_action / 10
+        self.rewards[1] = -i_action / 2
+        self.rewards[2] = i_action / self.i_step
+        if i_action < self.n_rewards:
+            self.rewards[i_action] = None
 
         self.log_step()
 
@@ -132,3 +136,4 @@ class BaseWorld:
 
     def close(self):
         self.logger.delete()
+        sys.exit()

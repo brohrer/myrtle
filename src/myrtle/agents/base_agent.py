@@ -1,4 +1,5 @@
 import sqlite3
+import sys
 import time
 import numpy as np
 from sqlogging import logging
@@ -44,7 +45,6 @@ class BaseAgent:
             try:
                 if msg["terminated"]:
                     self.close()
-                    break
             except KeyError:
                 pass
             try:
@@ -61,7 +61,6 @@ class BaseAgent:
                 try:
                     if msg["terminated"]:
                         self.close()
-                        break
                 except KeyError:
                     pass
                 try:
@@ -142,3 +141,4 @@ class BaseAgent:
 
     def close(self):
         self.logger.delete()
+        sys.exit()

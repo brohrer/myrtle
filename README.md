@@ -200,3 +200,5 @@ This means that the Agent must be able to handle the case where
 the World has provided multiple sensor/reward updates since
 the previous iteration. It also means that the World must be prepared to have 
 one, zero, or multiple action commands from the Agent.
+
+ ![Myrtle process map](/doc/myrtle_processes.png)
