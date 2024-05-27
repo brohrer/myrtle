@@ -17,6 +17,7 @@ class BaseAgent:
             log_dir=".",
             logging_level="info",
     ):
+        self.name = "Base agent"
         self.n_sensors = n_sensors
         self.n_actions = n_actions
         self.n_rewards = n_rewards
@@ -140,5 +141,10 @@ class BaseAgent:
             self.logger.info(self.log_data)
 
     def close(self):
-        self.logger.delete()
+        # If a logger was created, delete it.
+        try:
+            self.logger.delete()
+        except AttributeError:
+            pass
+
         sys.exit()

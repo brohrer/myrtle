@@ -18,15 +18,18 @@ class BaseWorld:
             self,
             sensor_q=None,
             action_q=None,
+            report_q=None,
             log_name=None,
             log_dir=".",
             logging_level="info",
     ):
+        self.name = "Base world"
         self.n_sensors = N_SENSORS
         self.n_actions = N_ACTIONS
         self.n_rewards = N_REWARDS
         self.sensor_q = sensor_q
         self.action_q = action_q
+        self.report_q = report_q
 
         self.pm = Pacemaker(STEPS_PER_SECOND)
         self.initialize_log(log_name, log_dir, logging_level)
@@ -40,6 +43,7 @@ class BaseWorld:
         self.rewards = [0] * self.n_rewards
         self.i_step = 0
         self.i_episode += 1
+        self.sensor_q.put({"truncated": True})
 
     def run(self):
         while self.i_episode < N_EPISODES:
@@ -57,7 +61,15 @@ class BaseWorld:
                     self.actions = msg["actions"]
 
                 self.step()
-                self.sensor_q.put({"sensors": self.sensors, "rewards": self.rewards})
+                self.sensor_q.put({
+                    "sensors": self.sensors,
+                    "rewards": self.rewards,
+                })
+                self.report_q.put({
+                    "step": self.i_step,
+                    "episode": self.i_episode,
+                    "rewards": self.rewards,
+                })
 
             self.reset()
 
@@ -95,8 +107,8 @@ class BaseWorld:
                 cols.append(f"act{i}")
             for i in range(self.n_rewards):
                 cols.append(f"rew{i}")
-            cols.append("i_step")
-            cols.append("i_episode")
+            cols.append("step")
+            cols.append("episode")
             cols.append("timestamp")
             cols.append("note")
 
@@ -128,12 +140,19 @@ class BaseWorld:
                 self.log_data[f"act{i}"] = self.actions[i]
             for i in range(self.n_rewards):
                 self.log_data[f"rew{i}"] = self.rewards[i]
-            self.log_data["i_step"] = self.i_step
-            self.log_data["i_episode"] = self.i_episode
+            self.log_data["step"] = self.i_step
+            self.log_data["episode"] = self.i_episode
             self.log_data["timestamp"] = time.time()
 
             self.logger.info(self.log_data)
 
     def close(self):
-        self.logger.delete()
+        self.sensor_q.put({"terminated": True})
+
+        # If a logger was created, delete it.
+        try:
+            self.logger.delete()
+        except AttributeError:
+            pass
+
         sys.exit()

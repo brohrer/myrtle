@@ -15,25 +15,28 @@ TIMEOUT = 1  # seconds
 def initialize_new_base_world():
     sen_q = mp.Queue()
     act_q = mp.Queue()
+    rep_q = mp.Queue()
     log_name = f"world_{int(time.time())}"
     world = base_world.BaseWorld(
         sensor_q=sen_q,
         action_q=act_q,
+        report_q=rep_q,
         log_name=log_name,
         log_dir=LOG_DIRECTORY,
     )
 
-    return world, sen_q, act_q, log_name
+    return world, sen_q, act_q, rep_q, log_name
 
 
 def test_initialization():
-    world, sen_q, act_q, log_name = initialize_new_base_world()
+    world, sen_q, act_q, rep_q, log_name = initialize_new_base_world()
     assert world.sensor_q is sen_q
     assert world.action_q is act_q
+    assert world.report_q is rep_q
 
 
 def test_sensor_reward_generation():
-    world, sen_q, act_q, log_name = initialize_new_base_world()
+    world, sen_q, act_q, rep_q, log_name = initialize_new_base_world()
     world.actions = np.array([0, 0, 1, 0, 0])
     world.step()
     assert world.sensors[1] == 0.0
@@ -45,7 +48,7 @@ def test_sensor_reward_generation():
 
 
 def test_creation_and_natural_termination():
-    world, sen_q, act_q, log_name = initialize_new_base_world()
+    world, sen_q, act_q, rep_q, log_name = initialize_new_base_world()
     p_world = mp.Process(target=world.run)
 
     p_world.start()
@@ -59,7 +62,7 @@ def test_creation_and_natural_termination():
 
 
 def test_early_termination():
-    world, sen_q, act_q, log_name = initialize_new_base_world()
+    world, sen_q, act_q, rep_q, log_name = initialize_new_base_world()
     p_world = mp.Process(target=world.run)
 
     p_world.start()
@@ -73,13 +76,16 @@ def test_early_termination():
 
 
 def test_action_sensor_qs():
-    world, sen_q, act_q, log_name = initialize_new_base_world()
+    world, sen_q, act_q, rep_q, log_name = initialize_new_base_world()
     p_world = mp.Process(target=world.run)
 
     p_world.start()
+    time.sleep(PAUSE)
     act_q.put({"actions": np.array([0, 0, 1, 0, 0])})
 
     # Get the return message 
+    # The first will be "truncated": True, indicating a new episode reset.
+    msg = sen_q.get(True, TIMEOUT)
     msg = sen_q.get(True, TIMEOUT)
     sensors = msg["sensors"]
     rewards = msg["rewards"]
@@ -96,8 +102,8 @@ def test_action_sensor_qs():
     p_world.close()
 
 
-def test_action_sensor_qs():
-    world, sen_q, act_q, log_name = initialize_new_base_world()
+def test_action_sensor_logging():
+    world, sen_q, act_q, rep_q, log_name = initialize_new_base_world()
     p_world = mp.Process(target=world.run)
 
     p_world.start()
@@ -125,6 +131,58 @@ def test_action_sensor_qs():
     assert get_value("sen9") == -0.3
     assert get_value("rew0") == 0.2
     assert get_value("rew2") is None
+
+    p_world.kill()
+    time.sleep(PAUSE)
+    p_world.close()
+
+
+def test_termination_truncation():
+    world, sen_q, act_q, rep_q, log_name = initialize_new_base_world()
+    p_world = mp.Process(target=world.run)
+
+    p_world.start()
+
+    p_world.join()
+
+    termination_count = 0
+    truncation_count = 0
+
+    while not sen_q.empty():
+        msg = sen_q.get()
+        try:
+            if msg["truncated"]:
+                truncation_count += 1
+        except KeyError:
+            pass
+
+        try:
+            if msg["terminated"]:
+                termination_count += 1
+        except KeyError:
+            pass
+
+    assert truncation_count == 3
+    assert termination_count == 1
+
+
+def test_report_q():
+    world, sen_q, act_q, rep_q, log_name = initialize_new_base_world()
+    p_world = mp.Process(target=world.run)
+
+    p_world.start()
+    act_q.put({"actions": np.array([0, 0, 1, 0, 0])})
+
+    # Get the return message
+    msg = rep_q.get(True, TIMEOUT)
+    i_step = msg["step"]
+    i_episode = msg["episode"]
+    rewards = msg["rewards"]
+
+    assert rewards[0] == 0.2
+    assert rewards[2] is None
+    assert i_step == 1
+    assert i_episode == 0
 
     p_world.kill()
     time.sleep(PAUSE)

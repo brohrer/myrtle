@@ -84,6 +84,8 @@ the array that the world will be expecting each iteration.
 the number of rewards, the length of
 the reward list that the world will be providing each iteration. If not provided,
 it is assumed to be the traditional 1.
+- `name`: `str`, an identifier so that the history of runs on this world can be
+displayed together and compared against each other.
 
 ### Multiple and intermittent rewards
 
@@ -153,6 +155,12 @@ described above for Worlds.
 - `action_q`: [`multiprocessing.Queue`](
     https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue)
 
+## Other attributes
+The only other attribute an Agent is expected to have is a name.
+
+- `name`: `str`, an identifier so that the history of runs with this agent can be
+displayed together and compared against each other.
+
 ## `run()` method
 
 Every Agent contains a `run()` method. This is the method that gets
@@ -165,6 +173,9 @@ receives the message from the World that its services are no longer needed.
 Communication between the Agent and the World is conducted through the Queues.
 Through the `sensor_q` the World passes sensor and reward information to the
 Agent.  Through the `action_q` the Agent passes action commands back to the World.
+
+The World also reports reward back to the parent bench process through a
+`report_q` Queue.
 
 ### `sensor_q` messages
 
@@ -184,6 +195,12 @@ Messages through the `action_q` are dicts with a single key-value pair.
 
 - "`actions`": `numpy.Array`, the values of all commanded actions.
 
+### `report_q` messages
+Messages through the `report_q` are dicts with a three key-value pairs.
+
+-"`episode`": `int`, the count of the current episode.
+-"`step`": `int`, the count of the current time step. Resets with each episode.
+-"`rewards`": `List`, as described for the `sensor_q` above.
 
 ## Multiprocess coordination
 
@@ -200,5 +217,15 @@ This means that the Agent must be able to handle the case where
 the World has provided multiple sensor/reward updates since
 the previous iteration. It also means that the World must be prepared to have 
 one, zero, or multiple action commands from the Agent.
+
+## Saving and reporting results
+
+If the benchmark is run with argument `record=True` (the default) then,
+the total reward for every time step reported by the World is written
+to a [SQLite database](https://docs.python.org/3/library/sqlite3.html),
+stored locally in a database file called `bench.db`.
+
+Reporting and visualization scripts can be written that pull from these results.
+
 
  ![Myrtle process map](/doc/myrtle_processes.png)
