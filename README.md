@@ -151,9 +151,9 @@ There is a base implementation of a world you can use as a foundation for writin
 your own. Import and extend the `BaseWorld` class.
 
 ```python
-from myrtle.agents.base_agent import BaseWorld
+from myrtle.worlds.base_world import BaseWorld
 
-class MyAgent(BaseAgent):
+class MyWorld(BaseWorld):
     ...
 ```
 
@@ -168,26 +168,27 @@ In addition to the base world there is a very short, but growing list of sample
 worlds that come with Myrtle. They are useful for developing, debugging,
 and benchmarking new agents.
 
-- Stationary Bandit
-`from myrtle.worlds.stationary_bandit import StationaryBandit`
+- Stationary Bandit  
+`from myrtle.worlds.stationary_bandit import StationaryBandit`  
 A multi-armed bandit where each arm has a different maximum payout and a different
 expected payout.
 
-- Non-stationary Bandit
-`from myrtle.worlds.nonstationary_bandit import NonStationaryBandit`
+- Non-stationary Bandit  
+`from myrtle.worlds.nonstationary_bandit import NonStationaryBandit`  
 A multi-armed bandit where each arm has a different maximum payout and a different
 expected payout, and after a number of time steps the max and expected payouts change
 for all arms.
 
-- Multi-reward Bandit
-`from myrtle.worlds.multi_reward_bandit import MultiRewardBandit`
+- Multi-reward Bandit  
+`from myrtle.worlds.multi_reward_bandit import MultiRewardBandit`  
 A stationary multi-armed bandit where each arm 
 reports its reward individually.
 
-- Intermittent-reward Bandit
-`from myrtle.worlds.intermittent_reward_bandit import IntermittentRewardBandit`
+- Intermittent-reward Bandit  
+`from myrtle.worlds.intermittent_reward_bandit import IntermittentRewardBandit`  
 A stationary multi-armed bandit where each arm 
 reports its reward individually but with intermittent outages.
+
 
 # Agents
 
@@ -244,17 +245,24 @@ These aren't intended to be very sophisticated, but they are useful for
 providing performance baselines, and they serve as examples of how to
 effectively extend the `BaseAgent`.
 
-- Random Single Action
-```from myrtle.agents.random_single_action import RandomSingleAction```
+- Random Single Action  
+```from myrtle.agents.random_single_action import RandomSingleAction```  
+An agent that selects one action at random each time step.
 
-- Random Multi Action
-```from myrtle.agents.random_multi_action import RandomMultiAction```
+- Random Multi Action  
+```from myrtle.agents.random_multi_action import RandomMultiAction```  
+An agent that will randomly select one or more actions at each time step,
+or none at all.
 
-- Greedy, State-blind
-```from myrtle.agents.greedy_state_blind import GreedyStateBlind```
+- Greedy, State-blind  
+```from myrtle.agents.greedy_state_blind import GreedyStateBlind```  
+An agent that will always select the action with the highest expected return.
 
-- Greedy, State-blind, with epsilon exploration
-```from myrtle.agents.greedy_state_blind_eps import GreedyStateBlindEpsilon```
+- Greedy, State-blind, with epsilon exploration  
+```from myrtle.agents.greedy_state_blind_eps import GreedyStateBlindEpsilon```  
+An agent that will select the action with the highest expected return
+most of the time. The rest of the time it will select a single action at random.
+
 ## Messaging
 
 Communication between the Agent and the World is conducted through the Queues.

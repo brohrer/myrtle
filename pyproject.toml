@@ -26,3 +26,8 @@ classifiers = [
 addopts = [
     "--import-mode=importlib",
 ]
+
+[project.urls]
+Homepage = "https://codeberg.org/brohrer/myrtle"
+Documentation = "https://codeberg.org/brohrer/myrtle/src/branch/main/README.md"
+Repository = "https://codeberg.org/brohrer/myrtle.git"
