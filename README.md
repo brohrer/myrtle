@@ -35,13 +35,21 @@ python3 -m pip install --editable myrtle
 
 ## Using Myrtle
 
-To run a RL agent against a world one time
+To run a RL agent against a world
 
 ```python
 from myrtle import bench
 bench.run(AgentClass, WorldClass)
 ```
 
+For example, to run a Random Single Action agent with a Stationary Multi-armed Bandit
+
+```python
+from myrtle import bench
+from myrtle.agents.random_single_action import RandomSingleAction
+from myrtle.worlds.stationary_bandit import StationaryBandit
+bench.run(RandomSingleAction, StationaryBandit)
+```
 
 ## Project layout
 
@@ -137,6 +145,49 @@ from pacemaker.pacemaker import Pacemaker
 
 and use the `Pacemaker.beat()` method to keep time. 
 
+## `BaseWorld`
+
+There is a base implementation of a world you can use as a foundation for writing
+your own. Import and extend the `BaseWorld` class.
+
+```python
+from myrtle.agents.base_agent import BaseWorld
+
+class MyAgent(BaseAgent):
+    ...
+```
+
+It takes care of the interface with the rest of the benchmarking platform,
+including process management, communication, and logging.
+To make it your own, override the `__init__()`, `reset()`, and `step()`
+methods.
+
+## Stock Worlds
+
+In addition to the base world there is a very short, but growing list of sample
+worlds that come with Myrtle. They are useful for developing, debugging,
+and benchmarking new agents.
+
+- Stationary Bandit
+`from myrtle.worlds.stationary_bandit import StationaryBandit`
+A multi-armed bandit where each arm has a different maximum payout and a different
+expected payout.
+
+- Non-stationary Bandit
+`from myrtle.worlds.nonstationary_bandit import NonStationaryBandit`
+A multi-armed bandit where each arm has a different maximum payout and a different
+expected payout, and after a number of time steps the max and expected payouts change
+for all arms.
+
+- Multi-reward Bandit
+`from myrtle.worlds.multi_reward_bandit import MultiRewardBandit`
+A stationary multi-armed bandit where each arm 
+reports its reward individually.
+
+- Intermittent-reward Bandit
+`from myrtle.worlds.intermittent_reward_bandit import IntermittentRewardBandit`
+A stationary multi-armed bandit where each arm 
+reports its reward individually but with intermittent outages.
 
 # Agents
 
@@ -178,7 +229,7 @@ your own. Import and extend the `BaseAgent` class.
 from myrtle.agents.base_agent import BaseAgent
 
 class MyAgent(BaseAgent):
-...
+    ...
 ```
 
 It takes care of the interface with the rest of the benchmarking platform,

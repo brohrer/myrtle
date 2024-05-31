@@ -1,14 +1,13 @@
 import multiprocessing as mp
+
 mp.set_start_method("fork")
 
-import sqlite3
-import time
-import numpy as np
-from myrtle.agents import base_agent
-from myrtle.worlds import base_world
-from sqlogging import logging
+import time  # noqa: E402
+from myrtle.agents import base_agent  # noqa: E402
+from myrtle.worlds import base_world  # noqa: E402
+from sqlogging import logging  # noqa: E402
 
-PAUSE = .01  # seconds
+PAUSE = 0.01  # seconds
 DB_NAME_DEFAULT = "bench"
 
 
@@ -43,8 +42,8 @@ def run(Agent, World, timeout=None, record=True, db_name=DB_NAME_DEFAULT):
                     "episode",
                     "run_timestamp",
                     "agentname",
-                    "worldname"
-                ]
+                    "worldname",
+                ],
             )
 
     sensor_q = mp.Queue()
@@ -108,9 +107,10 @@ def run(Agent, World, timeout=None, record=True, db_name=DB_NAME_DEFAULT):
     # Put a human-readable report in the console
     avg_reward = total_reward / total_steps
     print(
-        f"Avg reward for {agent.name} on {world.name}," +
-        f" across {episode + 1} episodes" +
-        f" with {step} steps each: {avg_reward}")
+        f"Avg reward for {agent.name} on {world.name},"
+        + f" across {episode + 1} episodes"
+        + f" with {step} steps each: {avg_reward}"
+    )
 
     world_exit = p_world.join()
     agent_exit = p_agent.join()

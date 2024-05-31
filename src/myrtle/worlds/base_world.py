@@ -1,4 +1,3 @@
-import sqlite3
 import sys
 import time
 import numpy as np
@@ -8,23 +7,26 @@ from sqlogging import logging
 
 class BaseWorld:
     def __init__(
-            self,
-            sensor_q=None,
-            action_q=None,
-            report_q=None,
-            log_name=None,
-            log_dir=".",
-            logging_level="info",
+        self,
+        sensor_q=None,
+        action_q=None,
+        report_q=None,
+        log_name=None,
+        log_dir=".",
+        logging_level="info",
     ):
         # Initialize constants
         self.n_sensors = 13
         self.n_actions = 5
         self.n_rewards = 3
         self.steps_per_second = 5
-        self.n_time_steps = 11  # Number of time steps to run in a single episode
+        self.n_time_steps = (
+            11  # Number of time steps to run in a single episode
+        )
         self.n_episodes = 3
         self.name = "Base world"
 
+        # This gets incremented to 0 with the first reset(), before the run starts.
         self.i_episode = -1
 
         self.sensor_q = sensor_q
@@ -35,14 +37,16 @@ class BaseWorld:
         self.initialize_log(log_name, log_dir, logging_level)
 
     def reset(self):
-        self.sensors = np.zeros(self.n_sensors)
-        self.actions = np.zeros(self.n_actions)
-        self.rewards = [0] * self.n_rewards
-
-        # This will probably be needed in every world.
+        # This block will probably be needed in the reset() of every world.
+        ####
         self.i_step = 0
         if self.i_episode > 0:
             self.sensor_q.put({"truncated": True})
+        ####
+
+        self.sensors = np.zeros(self.n_sensors)
+        self.actions = np.zeros(self.n_actions)
+        self.rewards = [0] * self.n_rewards
 
     def run(self):
         while (self.i_episode + 1) < self.n_episodes:
@@ -56,7 +60,7 @@ class BaseWorld:
                 # If all goes well, there should be exactly one action
                 # array in the queue.
                 # If multiple, use the last and ignore others.
-                # If none, use an all-zeros action. 
+                # If none, use an all-zeros action.
                 self.actions = np.zeros(self.n_actions)
                 while not self.action_q.empty():
                     msg = self.action_q.get()
@@ -66,16 +70,19 @@ class BaseWorld:
                 self.log_step()
                 self.i_step += 1
 
-                self.sensor_q.put({
-                    "sensors": self.sensors,
-                    "rewards": self.rewards,
-                })
-                self.report_q.put({
-                    "step": self.i_step,
-                    "episode": self.i_episode,
-                    "rewards": self.rewards,
-                })
-
+                self.sensor_q.put(
+                    {
+                        "sensors": self.sensors,
+                        "rewards": self.rewards,
+                    }
+                )
+                self.report_q.put(
+                    {
+                        "step": self.i_step,
+                        "episode": self.i_episode,
+                        "rewards": self.rewards,
+                    }
+                )
 
         self.close()
 
@@ -89,9 +96,11 @@ class BaseWorld:
             i_action = 1
 
         # Some arbitrary, but deterministic behavior.
-        self.sensors  = np.zeros(self.n_sensors)
-        self.sensors[:self.n_actions] = self.actions
-        self.sensors[self.n_actions: 2 * self.n_actions] = .8 * self.actions - .3
+        self.sensors = np.zeros(self.n_sensors)
+        self.sensors[: self.n_actions] = self.actions
+        self.sensors[self.n_actions : 2 * self.n_actions] = (
+            0.8 * self.actions - 0.3
+        )
 
         self.rewards = [0] * self.n_rewards
         self.rewards[0] = i_action / 10

@@ -7,7 +7,7 @@ from myrtle.agents import base_agent
 from myrtle.config import LOG_DIRECTORY
 
 np.random.seed(42)
-PAUSE = .01  # seconds
+PAUSE = 0.01  # seconds
 TIMEOUT = 1  # seconds
 
 
@@ -32,7 +32,15 @@ def initialize_new_base_agent():
 
 
 def test_initialization():
-    agent, n_sen, n_act, n_rew, sen_q, act_q, log_name = initialize_new_base_agent()
+    (
+        agent,
+        n_sen,
+        n_act,
+        n_rew,
+        sen_q,
+        act_q,
+        log_name,
+    ) = initialize_new_base_agent()
 
     assert agent.n_sensors == n_sen
     assert agent.n_actions == n_act
@@ -42,7 +50,15 @@ def test_initialization():
 
 
 def test_action_generation():
-    agent, n_sen, n_act, n_rew, sen_q, act_q, log_name = initialize_new_base_agent()
+    (
+        agent,
+        n_sen,
+        n_act,
+        n_rew,
+        sen_q,
+        act_q,
+        log_name,
+    ) = initialize_new_base_agent()
     agent.step()
 
     # There should be just one nonzero action, and it should have a value of 1.
@@ -52,7 +68,15 @@ def test_action_generation():
 
 
 def test_process_creation_and_destruction():
-    agent, n_sen, n_act, n_rew, sen_q, act_q, log_name = initialize_new_base_agent()
+    (
+        agent,
+        n_sen,
+        n_act,
+        n_rew,
+        sen_q,
+        act_q,
+        log_name,
+    ) = initialize_new_base_agent()
     p_agent = mp.Process(target=agent.run)
     assert p_agent.is_alive() is False
 
@@ -70,7 +94,15 @@ def test_process_creation_and_destruction():
 
 
 def test_shutdown_through_sensor_q():
-    agent, n_sen, n_act, n_rew, sen_q, act_q, log_name = initialize_new_base_agent()
+    (
+        agent,
+        n_sen,
+        n_act,
+        n_rew,
+        sen_q,
+        act_q,
+        log_name,
+    ) = initialize_new_base_agent()
     p_agent = mp.Process(target=agent.run)
     p_agent.start()
 
@@ -85,7 +117,15 @@ def test_shutdown_through_sensor_q():
 
 
 def test_reset():
-    agent, n_sen, n_act, n_rew, sen_q, act_q, log_name = initialize_new_base_agent()
+    (
+        agent,
+        n_sen,
+        n_act,
+        n_rew,
+        sen_q,
+        act_q,
+        log_name,
+    ) = initialize_new_base_agent()
     assert agent.i_step == 0
 
     agent.step()
@@ -101,7 +141,15 @@ def test_reset():
 
 
 def test_reset_through_sensor_q():
-    agent, n_sen, n_act, n_rew, sen_q, act_q, log_name = initialize_new_base_agent()
+    (
+        agent,
+        n_sen,
+        n_act,
+        n_rew,
+        sen_q,
+        act_q,
+        log_name,
+    ) = initialize_new_base_agent()
 
     agent.step()
     agent.log_step()
@@ -121,24 +169,28 @@ def test_reset_through_sensor_q():
         name=log_name,
         dir_name=LOG_DIRECTORY,
     )
-    result = logger.query(f"""
+    result = logger.query(
+        f"""
         SELECT i_step
         FROM {log_name}
         ORDER BY timestamp DESC
         LIMIT 1
-    """)
+    """
+    )
     assert result[0][0] == 2
 
     msg = {"truncated": True}
     sen_q.put(msg)
     time.sleep(PAUSE)
 
-    result = logger.query(f"""
+    result = logger.query(
+        f"""
         SELECT i_step
         FROM {log_name}
         ORDER BY timestamp DESC
         LIMIT 1
-    """)
+    """
+    )
     assert result[0][0] == 0
 
     p_agent.kill()
@@ -150,7 +202,15 @@ def test_reward_q():
     """
     Verify that the rewards passed into the base agent are received and stored.
     """
-    agent, n_sen, n_act, n_rew, sen_q, act_q, log_name = initialize_new_base_agent()
+    (
+        agent,
+        n_sen,
+        n_act,
+        n_rew,
+        sen_q,
+        act_q,
+        log_name,
+    ) = initialize_new_base_agent()
 
     p_agent = mp.Process(target=agent.run)
     p_agent.start()
@@ -170,12 +230,14 @@ def test_reward_q():
     time.sleep(PAUSE)
 
     for i_rew in range(n_rew):
-        result = logger.query(f"""
+        result = logger.query(
+            f"""
             SELECT rew{i_rew}
             FROM {log_name}
             ORDER BY timestamp DESC
             LIMIT 1
-        """)
+        """
+        )
         assert result[0][0] == 789
 
     rewards = np.ones(n_rew) * 543
@@ -187,12 +249,14 @@ def test_reward_q():
     time.sleep(PAUSE)
 
     for i_rew in range(n_rew):
-        result = logger.query(f"""
+        result = logger.query(
+            f"""
             SELECT rew{i_rew}
             FROM {log_name}
             ORDER BY timestamp DESC
             LIMIT 1
-        """)
+        """
+        )
         assert result[0][0] == 543
 
     p_agent.kill()
@@ -204,7 +268,15 @@ def test_sensor_q():
     """
     Verify that the sensor values passed into the base agent are received and stored.
     """
-    agent, n_sen, n_act, n_rew, sen_q, act_q, log_name = initialize_new_base_agent()
+    (
+        agent,
+        n_sen,
+        n_act,
+        n_rew,
+        sen_q,
+        act_q,
+        log_name,
+    ) = initialize_new_base_agent()
 
     p_agent = mp.Process(target=agent.run)
     p_agent.start()
@@ -224,12 +296,14 @@ def test_sensor_q():
     time.sleep(PAUSE)
 
     for i_sen in range(n_sen):
-        result = logger.query(f"""
+        result = logger.query(
+            f"""
             SELECT sen{i_sen}
             FROM {log_name}
             ORDER BY timestamp DESC
             LIMIT 1
-        """)
+        """
+        )
         assert result[0][0] == 267
 
     sensors = np.ones(n_sen) * 7389
@@ -241,12 +315,14 @@ def test_sensor_q():
     time.sleep(PAUSE)
 
     for i_sen in range(n_sen):
-        result = logger.query(f"""
+        result = logger.query(
+            f"""
             SELECT sen{i_sen}
             FROM {log_name}
             ORDER BY timestamp DESC
             LIMIT 1
-        """)
+        """
+        )
         assert result[0][0] == 7389
 
     p_agent.kill()
@@ -255,7 +331,15 @@ def test_sensor_q():
 
 
 def test_actions():
-    agent, n_sen, n_act, n_rew, sen_q, act_q, log_name = initialize_new_base_agent()
+    (
+        agent,
+        n_sen,
+        n_act,
+        n_rew,
+        sen_q,
+        act_q,
+        log_name,
+    ) = initialize_new_base_agent()
 
     p_agent = mp.Process(target=agent.run)
     p_agent.start()
@@ -273,7 +357,7 @@ def test_actions():
     }
     sen_q.put(msg)
     time.sleep(PAUSE)
-    # Get the return message 
+    # Get the return message
     msg = act_q.get(True, TIMEOUT)
     actions = msg["actions"]
 
@@ -283,12 +367,14 @@ def test_actions():
     assert np.sum(actions) == 1
 
     for i_act in range(n_act):
-        result = logger.query(f"""
+        result = logger.query(
+            f"""
             SELECT act{i_act}
             FROM {log_name}
             ORDER BY timestamp DESC
             LIMIT 1
-        """)
+        """
+        )
         assert result[0][0] == actions[i_act]
 
     p_agent.kill()

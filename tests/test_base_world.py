@@ -7,8 +7,8 @@ from myrtle.worlds import base_world
 from myrtle.config import LOG_DIRECTORY
 
 np.random.seed(42)
-PAUSE = .01  # seconds
-LONG_PAUSE = .3  # seconds
+PAUSE = 0.01  # seconds
+LONG_PAUSE = 0.3  # seconds
 TIMEOUT = 1  # seconds
 
 
@@ -84,7 +84,7 @@ def test_action_sensor_qs():
     time.sleep(PAUSE)
     act_q.put({"actions": np.array([0, 0, 1, 0, 0])})
 
-    # Get the return message 
+    # Get the return message
     msg = sen_q.get(True, TIMEOUT)
     sensors = msg["sensors"]
     rewards = msg["rewards"]
@@ -116,12 +116,14 @@ def test_action_sensor_logging():
     time.sleep(LONG_PAUSE)
 
     def get_value(col):
-        result = logger.query(f"""
+        result = logger.query(
+            f"""
             SELECT {col}
             FROM {log_name}
             ORDER BY timestamp ASC
             LIMIT 1
-        """)
+        """
+        )
         return result[0][0]
 
     assert get_value("sen1") == 0.0

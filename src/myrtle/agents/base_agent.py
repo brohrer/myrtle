@@ -1,4 +1,3 @@
-import sqlite3
 import sys
 import time
 import numpy as np
@@ -7,15 +6,15 @@ from sqlogging import logging
 
 class BaseAgent:
     def __init__(
-            self,
-            n_sensors=None,
-            n_actions=None,
-            n_rewards=None,
-            sensor_q=None,
-            action_q=None,
-            log_name=None,
-            log_dir=".",
-            logging_level="info",
+        self,
+        n_sensors=None,
+        n_actions=None,
+        n_rewards=None,
+        sensor_q=None,
+        action_q=None,
+        log_name=None,
+        log_dir=".",
+        logging_level="info",
     ):
         self.name = "Base agent"
         self.n_sensors = n_sensors

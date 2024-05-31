@@ -1,5 +1,3 @@
-import math
-import os
 import time
 from myrtle import bench
 from myrtle.agents import base_agent
@@ -20,21 +18,25 @@ def test_result_logging():
     assert exitcode == 0
 
     logger = logging.open_logger(name=TEST_DB_NAME)
-    result = logger.query(f"""
+    result = logger.query(
+        f"""
         SELECT step
         FROM {TEST_DB_NAME}
         ORDER BY step_timestamp DESC
         LIMIT 1
-    """)
+    """
+    )
     assert result[0][0] == 11
 
-    result = logger.query(f"""
+    result = logger.query(
+        f"""
         SELECT AVG(reward)
         FROM {TEST_DB_NAME}
         GROUP BY episode
         ORDER BY episode DESC
         LIMIT 1
-    """)
+    """
+    )
     assert result[0][0] > -1 and result[0][0] < 1
 
     exitcode = bench.run(
@@ -51,10 +53,12 @@ def test_result_logging():
         db_name=TEST_DB_NAME,
     )
 
-    result = logger.query(f"""
+    result = logger.query(
+        f"""
         SELECT COUNT(DISTINCT run_timestamp)
         FROM {TEST_DB_NAME}
-    """)
+    """
+    )
     print(result)
     assert result[0][0] == 3
 

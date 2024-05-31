@@ -1,22 +1,18 @@
-import sqlite3
-import sys
-import time
 import numpy as np
-from sqlogging import logging
 from myrtle.agents.base_agent import BaseAgent
 
 
 class GreedyStateBlindEpsilon(BaseAgent):
     def __init__(
-            self,
-            n_sensors=None,
-            n_actions=None,
-            n_rewards=None,
-            sensor_q=None,
-            action_q=None,
-            log_name=None,
-            log_dir=".",
-            logging_level="info",
+        self,
+        n_sensors=None,
+        n_actions=None,
+        n_rewards=None,
+        sensor_q=None,
+        action_q=None,
+        log_name=None,
+        log_dir=".",
+        logging_level="info",
     ):
         self.name = "Greedy State-Blind"
         self.n_sensors = n_sensors
@@ -25,7 +21,7 @@ class GreedyStateBlindEpsilon(BaseAgent):
         self.sensor_q = sensor_q
         self.action_q = action_q
 
-        self.epsilon = .1
+        self.epsilon = 0.1
 
         self.initialize_log(log_name, log_dir, logging_level)
 
