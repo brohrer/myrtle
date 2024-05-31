@@ -137,6 +137,7 @@ from pacemaker.pacemaker import Pacemaker
 
 and use the `Pacemaker.beat()` method to keep time. 
 
+
 # Agents
 
 An Agent class has a few defining characteristics. For an example of how
@@ -168,6 +169,41 @@ called by the benchmarking code.
 By convention the `run()` method runs on an infinite loop, at least until it
 receives the message from the World that its services are no longer needed.
 
+## `BaseAgent`
+
+There is a base implementation of an agent you can use as a foundation for writing
+your own. Import and extend the `BaseAgent` class.
+
+```python
+from myrtle.agents.base_agent import BaseAgent
+
+class MyAgent(BaseAgent):
+...
+```
+
+It takes care of the interface with the rest of the benchmarking platform,
+including process management, communication, and logging.
+To make it your own, override the `__init__()`, `reset()`, and `step()`
+methods.
+
+## Agents included
+
+As of this writing there is a short list of agents that come with Myrtle.
+These aren't intended to be very sophisticated, but they are useful for 
+providing performance baselines, and they serve as examples of how to
+effectively extend the `BaseAgent`.
+
+- Random Single Action
+```from myrtle.agents.random_single_action import RandomSingleAction```
+
+- Random Multi Action
+```from myrtle.agents.random_multi_action import RandomMultiAction```
+
+- Greedy, State-blind
+```from myrtle.agents.greedy_state_blind import GreedyStateBlind```
+
+- Greedy, State-blind, with epsilon exploration
+```from myrtle.agents.greedy_state_blind_eps import GreedyStateBlindEpsilon```
 ## Messaging
 
 Communication between the Agent and the World is conducted through the Queues.

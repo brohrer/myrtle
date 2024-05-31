@@ -26,6 +26,7 @@ class BaseAgent:
 
         self.initialize_log(log_name, log_dir, logging_level)
 
+        # This will get incremented to 0 by the reset.
         self.i_episode = -1
         self.reset()
 
@@ -33,8 +34,14 @@ class BaseAgent:
         self.sensors = np.zeros(self.n_sensors)
         self.rewards = [0] * self.n_rewards
         self.actions = np.zeros(self.n_actions)
-        self.i_step = 0
         self.i_episode += 1
+        self.i_step = 0
+
+    def step(self):
+        # Pick a random action.
+        self.actions = np.zeros(self.n_actions)
+        i_action = np.random.choice(self.n_actions)
+        self.actions[i_action] = 1
 
     def run(self):
         while True:
@@ -80,16 +87,10 @@ class BaseAgent:
                 pass
 
             self.step()
+            self.log_step()
+            self.i_step += 1
+
             self.action_q.put({"actions": self.actions})
-
-    def step(self):
-        self.i_step += 1
-        # Pick a random action.
-        self.actions = np.zeros(self.n_actions)
-        i_action = np.random.choice(self.n_actions)
-        self.actions[i_action] = 1
-
-        self.log_step()
 
     def initialize_log(self, log_name, log_dir, logging_level):
         if log_name is not None:
@@ -113,7 +114,7 @@ class BaseAgent:
                     dir_name=log_dir,
                 )
                 old_logger.delete()
-            except sqlite3.OperationalError:
+            except RuntimeError:
                 pass
 
             self.logger = logging.create_logger(

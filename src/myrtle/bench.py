@@ -29,19 +29,23 @@ def run(Agent, World, timeout=None, record=True, db_name=DB_NAME_DEFAULT):
 
     # Spin up the sqlite database where results are stored
     if record:
-        logger = logging.create_logger(
-            name=db_name,
-            level="info",
-            columns=[
-                "reward",
-                "step",
-                "step_timestamp",
-                "episode",
-                "run_timestamp",
-                "agentname",
-                "worldname"
-            ]
-        )
+        # If a logger already exists, use it.
+        try:
+            logger = logging.open_logger(name=db_name)
+        except RuntimeError:
+            # If necessary, create a new logger.
+            logger = logging.create_logger(
+                name=db_name,
+                columns=[
+                    "reward",
+                    "step",
+                    "step_timestamp",
+                    "episode",
+                    "run_timestamp",
+                    "agentname",
+                    "worldname"
+                ]
+            )
 
     sensor_q = mp.Queue()
     action_q = mp.Queue()
@@ -69,46 +73,52 @@ def run(Agent, World, timeout=None, record=True, db_name=DB_NAME_DEFAULT):
     p_agent.start()
     p_world.start()
 
-    if timeout is not None:
-        world_exit = p_world.join(timeout)
-        agent_exit = p_agent.join(timeout)
-    else:
-        world_exit = p_world.join()
-        agent_exit = p_agent.join()
-
-    if world_exit is None and agent_exit is None:
-        exitcode = 0
-    else:
-        exitcode = 1
-
     total_reward = 0.0
-    step = 0
-    episode = 0
-    while not report_q.empty():
+    total_steps = 0
+    while True:
         msg = report_q.get()
+        try:
+            if msg["terminated"]:
+                break
+        except KeyError:
+            pass
+
         reward = 0.0
         for reward_channel in msg["rewards"]:
             if reward_channel is not None:
                 reward += reward_channel
+
         total_reward += reward
+        total_steps += 1
+
         step = msg["step"]
+        episode = msg["episode"]
         if record:
             log_data = {
                 "reward": reward,
                 "step": step,
                 "step_timestamp": time.time(),
-                "episode": msg["episode"],
+                "episode": episode,
                 "run_timestamp": run_timestamp,
-                "worldname": world.name,
                 "agentname": agent.name,
+                "worldname": world.name,
             }
             logger.info(log_data)
 
     # Put a human-readable report in the console
-    epsilon = 1e-6
-    avg_reward = total_reward / (step + epsilon)
-    print(f"Avg reward for {agent.name} on {world.name}, ep {episode}" +
-        f" in {step} steps: {avg_reward}")
+    avg_reward = total_reward / total_steps
+    print(
+        f"Avg reward for {agent.name} on {world.name}," +
+        f" across {episode + 1} episodes" +
+        f" with {step} steps each: {avg_reward}")
+
+    world_exit = p_world.join()
+    agent_exit = p_agent.join()
+
+    if world_exit is None and agent_exit is None:
+        exitcode = 0
+    else:
+        exitcode = 1
 
     # Clean up any processes that might accidentally be still running.
     if p_world.is_alive():

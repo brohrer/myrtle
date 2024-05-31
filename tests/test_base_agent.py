@@ -89,10 +89,10 @@ def test_reset():
     assert agent.i_step == 0
 
     agent.step()
-    assert agent.i_step == 1
+    agent.i_step += 1
 
     agent.step()
-    assert agent.i_step == 2
+    agent.i_step += 1
 
     agent.reset()
     assert agent.i_step == 0
@@ -102,9 +102,17 @@ def test_reset():
 
 def test_reset_through_sensor_q():
     agent, n_sen, n_act, n_rew, sen_q, act_q, log_name = initialize_new_base_agent()
+
     agent.step()
+    agent.log_step()
+    agent.i_step += 1
+
     agent.step()
+    agent.log_step()
+    agent.i_step += 1
+
     agent.step()
+    agent.log_step()
 
     p_agent = mp.Process(target=agent.run)
     p_agent.start()
@@ -119,7 +127,7 @@ def test_reset_through_sensor_q():
         ORDER BY timestamp DESC
         LIMIT 1
     """)
-    assert result[0][0] == 3
+    assert result[0][0] == 2
 
     msg = {"truncated": True}
     sen_q.put(msg)
@@ -131,7 +139,7 @@ def test_reset_through_sensor_q():
         ORDER BY timestamp DESC
         LIMIT 1
     """)
-    assert result[0][0] == 1
+    assert result[0][0] == 0
 
     p_agent.kill()
     time.sleep(PAUSE)

@@ -37,11 +37,25 @@ def test_result_logging():
     """)
     assert result[0][0] > -1 and result[0][0] < 1
 
-    logger.delete()
+    exitcode = bench.run(
+        base_agent.BaseAgent,
+        base_world.BaseWorld,
+        timeout=TIMEOUT,
+        db_name=TEST_DB_NAME,
+    )
 
-# Test that the agent terminated 
-# Test reward delivery
-# Test reward summation
-# Test reward saving
-# Add names and versions to worlds and agents?
-# Test reward history reporting
+    exitcode = bench.run(
+        base_agent.BaseAgent,
+        base_world.BaseWorld,
+        timeout=TIMEOUT,
+        db_name=TEST_DB_NAME,
+    )
+
+    result = logger.query(f"""
+        SELECT COUNT(DISTINCT run_timestamp)
+        FROM {TEST_DB_NAME}
+    """)
+    print(result)
+    assert result[0][0] == 3
+
+    logger.delete()

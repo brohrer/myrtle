@@ -37,6 +37,7 @@ def test_initialization():
 
 def test_sensor_reward_generation():
     world, sen_q, act_q, rep_q, log_name = initialize_new_base_world()
+    world.reset()
     world.actions = np.array([0, 0, 1, 0, 0])
     world.step()
     assert world.sensors[1] == 0.0
@@ -84,8 +85,6 @@ def test_action_sensor_qs():
     act_q.put({"actions": np.array([0, 0, 1, 0, 0])})
 
     # Get the return message 
-    # The first will be "truncated": True, indicating a new episode reset.
-    msg = sen_q.get(True, TIMEOUT)
     msg = sen_q.get(True, TIMEOUT)
     sensors = msg["sensors"]
     rewards = msg["rewards"]
@@ -162,7 +161,7 @@ def test_termination_truncation():
         except KeyError:
             pass
 
-    assert truncation_count == 3
+    assert truncation_count == 2
     assert termination_count == 1
 
 
