@@ -163,3 +163,4 @@ cython_debug/
 # Myrtle stuff
 *.db
 myrtle_logs/
+sandbox/

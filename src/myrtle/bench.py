@@ -11,7 +11,15 @@ PAUSE = 0.01  # seconds
 DB_NAME_DEFAULT = "bench"
 
 
-def run(Agent, World, timeout=None, record=True, db_name=DB_NAME_DEFAULT):
+def run(
+    Agent,
+    World,
+    timeout=None,
+    record=True,
+    db_name=DB_NAME_DEFAULT,
+    agent_args={},
+    world_args={},
+):
     """
     timeout (int or None)
     How long in seconds the world and agent are allowed to run
@@ -50,7 +58,7 @@ def run(Agent, World, timeout=None, record=True, db_name=DB_NAME_DEFAULT):
     action_q = mp.Queue()
     report_q = mp.Queue()
 
-    world = World(sensor_q=sensor_q, action_q=action_q, report_q=report_q)
+    world = World(sensor_q=sensor_q, action_q=action_q, report_q=report_q, **world_args)
     n_sensors = world.n_sensors
     n_actions = world.n_actions
     try:
@@ -64,6 +72,7 @@ def run(Agent, World, timeout=None, record=True, db_name=DB_NAME_DEFAULT):
         n_rewards=n_rewards,
         sensor_q=sensor_q,
         action_q=action_q,
+        **agent_args,
     )
 
     p_agent = mp.Process(target=agent.run)

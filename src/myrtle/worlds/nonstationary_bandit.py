@@ -3,14 +3,14 @@ from myrtle.worlds.base_world import BaseWorld
 from pacemaker.pacemaker import Pacemaker
 
 
-class StationaryBandit(BaseWorld):
+class NonStationaryBandit(BaseWorld):
     def __init__(
         self,
+        n_time_steps=1000,
+        n_episodes=1,
         sensor_q=None,
         action_q=None,
         report_q=None,
-        n_time_steps=1000,
-        n_episodes=1,
         log_name=None,
         log_dir=".",
         logging_level="info",
@@ -23,9 +23,12 @@ class StationaryBandit(BaseWorld):
 
         # Number of time steps to run in a single episode
         self.n_time_steps = n_time_steps
-        self.n_episodes = n_episodes
 
-        self.name = "Stationary bandit"
+        # Time step at which to change payout amounts and probabilities
+        self.time_step_switch = 1000
+
+        self.n_episodes = n_episodes
+        self.name = "Non-stationary bandit"
 
         # This gets incremented to 0 with the first reset(), before the run starts.
         self.i_episode = -1
@@ -39,8 +42,10 @@ class StationaryBandit(BaseWorld):
 
         # The highest paying bandit is 2 with average payout of .4 * 280 = 112.
         # Others are 100 or less.
-        self.bandit_payouts = [150, 200, 280, 320, 500]
-        self.bandit_hit_rates = [0.6, 0.5, 0.4, 0.3, 0.2]
+        self.bandit_payouts_pre = [150, 200, 280, 320, 500]
+        self.bandit_hit_rates_pre = [0.6, 0.5, 0.4, 0.3, 0.2]
+        self.bandit_payouts_post = [320, 500, 150, 200, 280]
+        self.bandit_hit_rates_post = [0.3, 0.2, 0.6, 0.5, 0.4]
 
     def reset(self):
         # This block will probably be needed in the reset() of every world.
@@ -59,7 +64,15 @@ class StationaryBandit(BaseWorld):
             f"step {self.i_step}, episode {self.i_episode}              ",
             end="\r",
         )
+
+        if self.i_step < self.time_step_switch:
+            bandit_hit_rates = self.bandit_hit_rates_pre
+            bandit_payouts = self.bandit_payouts_pre
+        else:
+            bandit_hit_rates = self.bandit_hit_rates_post
+            bandit_payouts = self.bandit_payouts_post
+
         self.rewards = [0] * self.n_actions
         for i in range(self.n_actions):
-            if np.random.sample() < self.bandit_hit_rates[i]:
-                self.rewards[i] = self.actions[i] * self.bandit_payouts[i]
+            if np.random.sample() < bandit_hit_rates[i]:
+                self.rewards[i] = self.actions[i] * bandit_payouts[i]

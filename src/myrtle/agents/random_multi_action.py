@@ -8,6 +8,7 @@ class RandomMultiAction(BaseAgent):
         n_sensors=None,
         n_actions=None,
         n_rewards=None,
+        avg_actions=2.0,
         sensor_q=None,
         action_q=None,
         log_name=None,
@@ -21,7 +22,6 @@ class RandomMultiAction(BaseAgent):
         self.sensor_q = sensor_q
         self.action_q = action_q
 
-        avg_actions = 2.0
         self.action_prob = avg_actions / self.n_actions
 
         self.initialize_log(log_name, log_dir, logging_level)

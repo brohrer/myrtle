@@ -3,7 +3,15 @@ from myrtle.worlds.base_world import BaseWorld
 from pacemaker.pacemaker import Pacemaker
 
 
-class StationaryBandit(BaseWorld):
+class ContextualBandit(BaseWorld):
+    """
+    A multi-armed bandit, except that at each time step the order of the
+    bandits is shuffled. The shuffled order is sensed.
+
+    This world tests an agent's ability to use sensor information to determine
+    which action to take.
+    """
+
     def __init__(
         self,
         sensor_q=None,
@@ -16,16 +24,16 @@ class StationaryBandit(BaseWorld):
         logging_level="info",
     ):
         # Initialize constants
-        self.n_sensors = 0
-        self.n_actions = 5
-        self.n_rewards = 5
+        self.n_sensors = 4
+        self.n_actions = 4
+        self.n_rewards = 4
         self.steps_per_second = 100
 
         # Number of time steps to run in a single episode
         self.n_time_steps = n_time_steps
         self.n_episodes = n_episodes
 
-        self.name = "Stationary bandit"
+        self.name = "Contextual bandit"
 
         # This gets incremented to 0 with the first reset(), before the run starts.
         self.i_episode = -1
@@ -38,9 +46,9 @@ class StationaryBandit(BaseWorld):
         self.initialize_log(log_name, log_dir, logging_level)
 
         # The highest paying bandit is 2 with average payout of .4 * 280 = 112.
-        # Others are 100 or less.
-        self.bandit_payouts = [150, 200, 280, 320, 500]
-        self.bandit_hit_rates = [0.6, 0.5, 0.4, 0.3, 0.2]
+        # Others are 50 or less.
+        self.bandit_payouts = [150, 200, 280, 320]
+        self.bandit_hit_rates = [0.3, 0.25, 0.4, 0.15]
 
     def reset(self):
         # This block will probably be needed in the reset() of every world.
@@ -59,7 +67,12 @@ class StationaryBandit(BaseWorld):
             f"step {self.i_step}, episode {self.i_episode}              ",
             end="\r",
         )
+
+        # Shuffle and sense the order of the bandits.
+        order = np.arange(self.n_actions)
+        np.random.shuffle(order)
+        self.sensors = order
         self.rewards = [0] * self.n_actions
         for i in range(self.n_actions):
-            if np.random.sample() < self.bandit_hit_rates[i]:
-                self.rewards[i] = self.actions[i] * self.bandit_payouts[i]
+            if np.random.sample() < self.bandit_hit_rates[order[i]]:
+                self.rewards[i] = self.actions[i] * self.bandit_payouts[order[i]]

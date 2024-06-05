@@ -11,6 +11,8 @@ class BaseWorld:
         sensor_q=None,
         action_q=None,
         report_q=None,
+        n_time_steps=11,
+        n_episodes=3,
         log_name=None,
         log_dir=".",
         logging_level="info",
@@ -20,10 +22,11 @@ class BaseWorld:
         self.n_actions = 5
         self.n_rewards = 3
         self.steps_per_second = 5
-        self.n_time_steps = (
-            11  # Number of time steps to run in a single episode
-        )
-        self.n_episodes = 3
+
+        # Number of time steps to run in a single episode
+        self.n_time_steps = n_time_steps
+        self.n_episodes = n_episodes
+
         self.name = "Base world"
 
         # This gets incremented to 0 with the first reset(), before the run starts.
@@ -98,9 +101,7 @@ class BaseWorld:
         # Some arbitrary, but deterministic behavior.
         self.sensors = np.zeros(self.n_sensors)
         self.sensors[: self.n_actions] = self.actions
-        self.sensors[self.n_actions : 2 * self.n_actions] = (
-            0.8 * self.actions - 0.3
-        )
+        self.sensors[self.n_actions : 2 * self.n_actions] = 0.8 * self.actions - 0.3
 
         self.rewards = [0] * self.n_rewards
         self.rewards[0] = i_action / 10

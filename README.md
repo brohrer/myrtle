@@ -179,11 +179,6 @@ A multi-armed bandit where each arm has a different maximum payout and a differe
 expected payout, and after a number of time steps the max and expected payouts change
 for all arms.
 
-- Multi-reward Bandit  
-`from myrtle.worlds.multi_reward_bandit import MultiRewardBandit`  
-A stationary multi-armed bandit where each arm 
-reports its reward individually.
-
 - Intermittent-reward Bandit  
 `from myrtle.worlds.intermittent_reward_bandit import IntermittentRewardBandit`  
 A stationary multi-armed bandit where each arm 
