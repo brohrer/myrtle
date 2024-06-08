@@ -58,7 +58,9 @@ def run(
     action_q = mp.Queue()
     report_q = mp.Queue()
 
-    world = World(sensor_q=sensor_q, action_q=action_q, report_q=report_q, **world_args)
+    world = World(
+        sensor_q=sensor_q, action_q=action_q, report_q=report_q, **world_args
+    )
     n_sensors = world.n_sensors
     n_actions = world.n_actions
     try:
@@ -115,11 +117,18 @@ def run(
 
     # Put a human-readable report in the console
     avg_reward = total_reward / total_steps
-    print(
-        f"Avg reward for {agent.name} on {world.name},"
-        + f" across {episode + 1} episodes"
-        + f" with {step} steps each: {avg_reward}"
-    )
+    print()
+    if episode > 1:
+        print(
+            f"Lifetime average reward across {episode + 1} episodes"
+            + f" of {step} steps each"
+        )
+        print(f"for {agent.name} on {world.name}: {avg_reward}")
+    else:
+        print(
+            f"    Lifetime average reward for {agent.name}"
+            + f" on {world.name}: {avg_reward}"
+        )
 
     world_exit = p_world.join()
     agent_exit = p_agent.join()

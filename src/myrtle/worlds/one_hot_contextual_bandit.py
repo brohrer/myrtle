@@ -82,4 +82,6 @@ class OneHotContextualBandit(BaseWorld):
 
             # For the selected bandits, check whether they pay out
             if np.random.sample() < self.bandit_hit_rates[order[i]]:
-                self.rewards[i] = self.actions[i] * self.bandit_payouts[order[i]]
+                self.rewards[i] = (
+                    self.actions[i] * self.bandit_payouts[order[i]]
+                )

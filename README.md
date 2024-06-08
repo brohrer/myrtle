@@ -35,6 +35,13 @@ python3 -m pip install --editable myrtle
 
 ## Using Myrtle
 
+To run a demo
+
+```python
+import myrtle.demo
+myrtle.demo.run_demo()
+```
+
 To run a RL agent against a world
 
 ```python
@@ -59,15 +66,21 @@ src/
         bench.py
         agents/
             base_agent.py
+            random_single_action.py
+            greedy_state_blind.py
+            q_learning_eps.py
             ...
         worlds/
             base_world.py
+            stationary_bandit.py
+            intermittent_reward_bandit.py
+            contextual_bandit.py
             ...
 tests/
     README.md
-    base_agent_test.py
-    base_world_test.py
-    bench_test.py
+    test_base_agent.py
+    test_base_world.py
+    test_bench.py
     ...
 ```
 
@@ -106,10 +119,10 @@ a bit more context
 
 ## Initialization
 
-A World class should be initializable with a two keyword arguments, 
+A World class should be initializable with a three keyword arguments, 
 [multiprocessing Queues](
 https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue),
-`sensor_q` and `action_q`.
+`sensor_q`, `action_q`, and `report_q`.
 
 `sensor_q` is the Queue for passing messages from the world to the agent.
 It provides sensor and reward information, as well as information about whether
@@ -120,9 +133,14 @@ a the current episode has terminated, or the world has ceased to exist altogethe
 It informs the world of the actions the agent has chosen to take.
 [More detail here.](#action_q-messages)
 
+`report_q` is the Queue for passing messages from the world bach to the bench process.
+It helps track reward at each time step.
+[More detail here.](#report_q-messages)
+
 ## Methods
 
-Every World contains a `run()` method. This is what the benchmark calls.
+Every World contains a `run()` method. This is what the bench process calls
+when it forks off the world process.
 It will determine how long the World runs, how many many times it starts over at
 the beginning (episodes), and everything else about what is run during benchmarking:
 
@@ -132,7 +150,7 @@ A good world for benchmarking with Myrtle will be tied to a wall clock
 in some way. In a perfect world, there is physical hardware involved.
 But this is expensive and time consuming, so more often it is a simulation
 of some sort. A good way to tie this to the wall clock is with a
-pacemaker that advances the simluation by one time step at a fixed cadence.
+pacemaker that advances the simluation step by step at a fixed cadence.
 There exists such a thing in the
 [`pacemaker` package](https://github.com/brohrer/pacemaker)
 (`pip install pacemaker-lite`).
@@ -184,6 +202,16 @@ for all arms.
 A stationary multi-armed bandit where each arm 
 reports its reward individually but with intermittent outages.
 
+- Contextual Bandit  
+`from myrtle.worlds.contextual_bandit import ContextualBandit`  
+A multi-armed bandit where the order of the arms is shuffled at each time step,
+but the order of the arms is reported in the sensor array.
+
+- One Hot Contextual Bandit  
+`from myrtle.worlds.one_hot_contextual_bandit import OneHotContextualBandit`  
+Just like the Contextual Bandit, except that the order of the arms is
+reported in a concatenation of one-hot arrays.
+
 
 # Agents
 
@@ -212,7 +240,7 @@ displayed together and compared against each other.
 ## `run()` method
 
 Every Agent contains a `run()` method. This is the method that gets
-called by the benchmarking code.
+called by the bench process when it forks a new agent process.
 By convention the `run()` method runs on an infinite loop, at least until it
 receives the message from the World that its services are no longer needed.
 
@@ -253,10 +281,19 @@ or none at all.
 ```from myrtle.agents.greedy_state_blind import GreedyStateBlind```  
 An agent that will always select the action with the highest expected return.
 
-- Greedy, State-blind, with epsilon exploration  
+- Greedy, State-blind, with epsilon-greedy exploration  
 ```from myrtle.agents.greedy_state_blind_eps import GreedyStateBlindEpsilon```  
 An agent that will select the action with the highest expected return
 most of the time. The rest of the time it will select a single action at random.
+
+- Q-Learning , with epsilon-greedy exploration  
+```from myrtle.agents.q_learning_eps import QLearningEpsilon```  
+The classic tabular learning algorithm.
+[Wikipedia](https://en.wikipedia.org/wiki/Q-learning)
+
+- Q-Learning , with curiosity-driven exploration  
+```from myrtle.agents.q_learning_curiosity import QLearningCuriosity```  
+Q-Learning, but with some home-rolled curiosity-driven exploration.
 
 ## Messaging
 
@@ -286,11 +323,13 @@ Messages through the `action_q` are dicts with a single key-value pair.
 - "`actions`": `numpy.Array`, the values of all commanded actions.
 
 ### `report_q` messages
-Messages through the `report_q` are dicts with a three key-value pairs.
+Messages through the `report_q` are dicts with a four key-value pairs.
 
--"`episode`": `int`, the count of the current episode.
--"`step`": `int`, the count of the current time step. Resets with each episode.
--"`rewards`": `List`, as described for the `sensor_q` above.
+- "`episode`": `int`, the count of the current episode.
+- "`step`": `int`, the count of the current time step. Resets with each episode.
+- "`rewards`": `List`, as described for the `sensor_q` above.
+- "`terminated`": `bool`, flag that all episodes have ended, and no more `report_q`
+messages will be sent.
 
 ## Multiprocess coordination
 
@@ -310,7 +349,7 @@ one, zero, or multiple action commands from the Agent.
 
 ## Saving and reporting results
 
-If the benchmark is run with argument `record=True` (the default) then,
+If the bench is run with argument `record=True` (the default) then,
 the total reward for every time step reported by the World is written
 to a [SQLite database](https://docs.python.org/3/library/sqlite3.html),
 stored locally in a database file called `bench.db`.

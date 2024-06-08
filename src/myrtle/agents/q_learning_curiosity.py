@@ -2,30 +2,32 @@ import numpy as np
 from myrtle.agents.base_agent import BaseAgent
 
 
-class QLearningEpsilon(BaseAgent):
+class QLearningCuriosity(BaseAgent):
     def __init__(
         self,
         n_sensors=None,
         n_actions=None,
         n_rewards=None,
         action_threshold=0.5,
-        epsilon=0.2,
+        curiosity_scale=1.0,
         discount_factor=0.8,
-        learning_rate=0.001,
+        learning_rate=0.01,
         sensor_q=None,
         action_q=None,
         log_name=None,
         log_dir=".",
         logging_level="info",
     ):
-        self.name = "Epsilon-Greedy Q-Learning"
+        self.name = "Q-Learning with Curiosity"
         self.n_sensors = n_sensors
         self.n_actions = n_actions
         self.n_rewards = n_rewards
         self.sensor_q = sensor_q
         self.action_q = action_q
 
-        self.epsilon = epsilon
+        # A weight that affects how much influence curiosity has on the
+        # agent's decision making process.
+        self.curiosity_scale = curiosity_scale
         self.discount_factor = discount_factor
         self.learning_rate = learning_rate
 
@@ -47,6 +49,15 @@ class QLearningEpsilon(BaseAgent):
         # Because we can't hash on Numpy arrays for the dict,
         # always use sensor_array.tobytes() as the key.
         self.q_values = {
+            self.previous_sensors.tobytes(): np.zeros(self.n_actions)
+        }
+
+        # Store state-action counts as a dict, too.
+        self.counts = {
+            self.previous_sensors.tobytes(): np.zeros(self.n_actions)
+        }
+        # And the curiosity associated with each state-action pair as well.
+        self.curiosities = {
             self.previous_sensors.tobytes(): np.zeros(self.n_actions)
         }
 
@@ -72,6 +83,8 @@ class QLearningEpsilon(BaseAgent):
 
         if self.sensors.tobytes() not in self.q_values:
             self.q_values[self.sensors.tobytes()] = np.zeros(self.n_actions)
+            self.counts[self.sensors.tobytes()] = np.zeros(self.n_actions)
+            self.curiosities[self.sensors.tobytes()] = np.zeros(self.n_actions)
 
         # Find the maximum expected value to come out of the next action.
         values = self.q_values[self.sensors.tobytes()]
@@ -91,21 +104,34 @@ class QLearningEpsilon(BaseAgent):
                 reward + self.discount_factor * max_value
             )
 
-        if np.random.sample() > self.epsilon:
-            # Recalculate in case `values` got modified during the update.
-            max_value = np.max(values)
-            # Make the most of existing experience.
-            # In the case where there are multiple matches for the highest value,
-            # randomly pick one of them. This is especially useful
-            # in the beginning when all the values are zero.
-            i_action = np.random.choice(np.where(values == max_value)[0])
-            # print(i_action, "||", values)
-        else:
-            # Explore to gain new experience
-            i_action = np.random.choice(self.n_actions)
+        # Calculate the curiosity associated with each action.
+        # There's a small amount of intrinsic reward associated with
+        # satisfying curiosity.
+        count = self.counts[self.sensors.tobytes()]
+        uncertainty = 1 / (count + 1)
+        self.curiosities[self.sensors.tobytes()] = (
+            self.curiosities[self.sensors.tobytes()]
+            + uncertainty * self.curiosity_scale
+        )
+        curiosity = self.curiosities[self.sensors.tobytes()]
+
+        # Find the most valuable action, including the influence of curiosity
+        max_value = np.max(values + curiosity)
+        # Make the most of existing experience.
+        # In the case where there are multiple matches for the highest value,
+        # randomly pick one of them. This is especially useful
+        # in the beginning when all the values are zero.
+        i_action = np.random.choice(
+            np.where((values + curiosity) == max_value)[0]
+        )
+        # print(i_action, "||", values)
 
         self.actions = np.zeros(self.n_actions)
         self.actions[i_action] = 1
+
+        # Reset the curiosity counter on the selected state-action pair.
+        self.curiosities[self.sensors.tobytes()][i_action] = 0
+        self.counts[self.sensors.tobytes()][i_action] += 1
 
         # Make sure to make a copy here, so that previous_sensors and sensors don't
         # end up pointing at the same Numpy Array object.
@@ -113,10 +139,20 @@ class QLearningEpsilon(BaseAgent):
 
         if self.i_step % self.report_steps == 0:
             # print()
+            # print("counts")
+            # for values in self.counts.values():
+            #     print(values)
+
+            # print("curiosities")
+            # for values in self.curiosities.values():
+            #     print(values)
+
             # print("q-values")
             # for values in self.q_values.values():
             #     print(values)
 
             avg_reward = np.mean(np.array(self.reward_history))
-            print(f"Average reward of {avg_reward} at time step {self.i_step}")
+            print(
+                f"Average reward of {avg_reward} at time step {self.i_step:,}"
+            )
             # print()

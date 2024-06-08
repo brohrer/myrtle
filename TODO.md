@@ -1,12 +1,6 @@
-- Why `from pacemaker import Pacemaker` on Mac and
-`from pacemaker.pacemaker import Pacemaker` on Linux?
-  - Test on Aidas
-
-- Write Demo
-
-- Write Q-Learning with curiosity-driven exploration.
-
-- Publish Myrtle
+- Publish Myrtle with demo
+  - push
+  - pypi
   - Share on Mastodon
   - Share on LinkedIn
 

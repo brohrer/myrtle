@@ -27,7 +27,7 @@ class ContextualBandit(BaseWorld):
         self.n_sensors = 4
         self.n_actions = 4
         self.n_rewards = 4
-        self.steps_per_second = 100
+        self.steps_per_second = 1000
 
         # Number of time steps to run in a single episode
         self.n_time_steps = n_time_steps
@@ -58,21 +58,29 @@ class ContextualBandit(BaseWorld):
             self.sensor_q.put({"truncated": True})
         ####
 
-        self.sensors = np.zeros(self.n_sensors)
+        self.bandit_order = np.arange(self.n_actions)
+        self.sensors = self.bandit_order.copy()
         self.actions = np.zeros(self.n_actions)
         self.rewards = [0] * self.n_rewards
 
     def step(self):
-        print(
-            f"step {self.i_step}, episode {self.i_episode}              ",
-            end="\r",
-        )
+        # print(
+        #     f"step {self.i_step}, episode {self.i_episode}              ",
+        #     end="\r",
+        # )
 
-        # Shuffle and sense the order of the bandits.
-        order = np.arange(self.n_actions)
-        np.random.shuffle(order)
-        self.sensors = order
+        # Calculate the reward based on the shuffled order of the previous time step.
         self.rewards = [0] * self.n_actions
         for i in range(self.n_actions):
-            if np.random.sample() < self.bandit_hit_rates[order[i]]:
-                self.rewards[i] = self.actions[i] * self.bandit_payouts[order[i]]
+            if (
+                np.random.sample()
+                < self.bandit_hit_rates[self.bandit_order[i]]
+            ):
+                self.rewards[i] = (
+                    self.actions[i] * self.bandit_payouts[self.bandit_order[i]]
+                )
+
+        # Shuffle and sense the order of the bandits.
+        self.bandit_order = np.arange(self.n_actions)
+        np.random.shuffle(self.bandit_order)
+        self.sensors = self.bandit_order.copy()
