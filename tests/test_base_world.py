@@ -81,14 +81,15 @@ def test_action_sensor_qs():
     p_world = mp.Process(target=world.run)
 
     p_world.start()
-    time.sleep(PAUSE)
     act_q.put({"actions": np.array([0, 0, 1, 0, 0])})
+    time.sleep(PAUSE)
 
     # Get the return message
     msg = sen_q.get(True, TIMEOUT)
     sensors = msg["sensors"]
     rewards = msg["rewards"]
 
+    # assert sensors is None
     assert sensors[1] == 0.0
     assert sensors[2] == 1.0
     assert sensors[7] == 0.5
@@ -105,14 +106,15 @@ def test_action_sensor_logging():
     world, sen_q, act_q, rep_q, log_name = initialize_new_base_world()
     p_world = mp.Process(target=world.run)
 
+    act_q.put({"actions": np.array([0, 0, 1, 0, 0])})
     p_world.start()
+    time.sleep(PAUSE)
 
     logger = logging.open_logger(
         name=log_name,
         dir_name=LOG_DIRECTORY,
     )
 
-    act_q.put({"actions": np.array([0, 0, 1, 0, 0])})
     time.sleep(LONG_PAUSE)
 
     def get_value(col):

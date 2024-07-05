@@ -22,12 +22,16 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
+[project.urls]
+Homepage = "https://codeberg.org/brohrer/myrtle"
+Documentation = "https://codeberg.org/brohrer/myrtle/src/branch/main/README.md"
+Repository = "https://codeberg.org/brohrer/myrtle.git"
+
+[tool.flake8]
+max-line-length = 88
+
 [tool.pytest.ini_options]
 addopts = [
     "--import-mode=importlib",
 ]
 
-[project.urls]
-Homepage = "https://codeberg.org/brohrer/myrtle"
-Documentation = "https://codeberg.org/brohrer/myrtle/src/branch/main/README.md"
-Repository = "https://codeberg.org/brohrer/myrtle.git"

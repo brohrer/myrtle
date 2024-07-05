@@ -69,6 +69,9 @@ class ContextualBandit(BaseWorld):
         #     end="\r",
         # )
 
+        self.pm.beat()
+        self.read_action_q()
+
         # Calculate the reward based on the shuffled order of the previous time step.
         self.rewards = [0] * self.n_actions
         for i in range(self.n_actions):

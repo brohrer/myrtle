@@ -2,35 +2,32 @@ import numpy as np
 from myrtle.agents.base_agent import BaseAgent
 
 
-class QLearningEpsilon(BaseAgent):
+class ValueAvgCuriosity(BaseAgent):
     def __init__(
         self,
         n_sensors=None,
         n_actions=None,
         n_rewards=None,
         action_threshold=0.5,
-        epsilon=0.2,
-        discount_factor=0.5,
-        learning_rate=0.01,
+        curiosity_scale=1.0,
         sensor_q=None,
         action_q=None,
         log_name=None,
         log_dir=".",
         logging_level="info",
     ):
-        self.name = "Epsilon-Greedy Q-Learning"
+        self.name = "Q-Averages with Curiosity"
         self.n_sensors = n_sensors
         self.n_actions = n_actions
         self.n_rewards = n_rewards
         self.sensor_q = sensor_q
         self.action_q = action_q
 
-        # A parameter that affects how often the agent chooses to explore
-        # random actions, rather than exploit (choose the best known action).
-        self.epsilon = epsilon
-
-        self.discount_factor = discount_factor
-        self.learning_rate = learning_rate
+        # A weight that affects how much influence curiosity has on the
+        # agent's decision making process. It gets accumulated across all actions,
+        # so it gets pre-divided by the number of actions to keep it from being
+        # artificially inflated.
+        self.curiosity_scale = curiosity_scale / self.n_actions
 
         # Q-Learning assumes that actions are binary \in {0, 1},
         # but just in case a world slips in fractional actions add a threshold.
@@ -50,6 +47,12 @@ class QLearningEpsilon(BaseAgent):
         # Because we can't hash on Numpy arrays for the dict,
         # always use sensor_array.tobytes() as the key.
         self.q_values = {self.previous_sensors.tobytes(): np.zeros(self.n_actions)}
+
+        # Store state-action counts as a dict, too.
+        self.counts = {self.previous_sensors.tobytes(): np.zeros(self.n_actions)}
+
+        # And the curiosity associated with each state-action pair as well.
+        self.curiosities = {self.previous_sensors.tobytes(): np.zeros(self.n_actions)}
 
     def reset(self):
         self.display()
@@ -74,42 +77,54 @@ class QLearningEpsilon(BaseAgent):
 
         if self.sensors.tobytes() not in self.q_values:
             self.q_values[self.sensors.tobytes()] = np.zeros(self.n_actions)
+            self.counts[self.sensors.tobytes()] = np.zeros(self.n_actions)
+            self.curiosities[self.sensors.tobytes()] = np.zeros(self.n_actions)
 
         # Find the maximum expected value to come out of the next action.
         values = self.q_values[self.sensors.tobytes()]
         max_value = np.max(values)
 
-        # Find the actions that were taken.
+        # Find the action that was taken. Assume it was only one action.
         # (In it's current implementation, there will never be more than one.)
         try:
             previous_action = np.where(self.actions > self.action_threshold)[0][0]
+            previous_count = self.counts[self.previous_sensors.tobytes()][previous_action]
             self.q_values[self.previous_sensors.tobytes()][previous_action] = (
-                1 - self.learning_rate
-            ) * self.q_values[self.previous_sensors.tobytes()][
-                previous_action
-            ] + self.learning_rate * (
-                reward + self.discount_factor * max_value
+                1 - 1 / (previous_count + 1)
+            ) * self.q_values[self.previous_sensors.tobytes()][previous_action] + (
+                1 / (previous_count + 1) * reward
             )
         except IndexError:
-            # Catch the case where there has been no action.
-            # This is true for the first iteration.
             pass
 
-        if np.random.sample() > self.epsilon:
-            # Recalculate in case `values` got modified during the update.
-            max_value = np.max(values)
-            # Make the most of existing experience.
-            # In the case where there are multiple matches for the highest value,
-            # randomly pick one of them. This is especially useful
-            # in the beginning when all the values are zero.
-            i_action = np.random.choice(np.where(values == max_value)[0])
-            # print(i_action, "||", values)
-        else:
-            # Explore to gain new experience
-            i_action = np.random.choice(self.n_actions)
+        # Calculate the curiosity associated with each action.
+        # There's a small amount of intrinsic reward associated with
+        # satisfying curiosity.
+        count = self.counts[self.sensors.tobytes()]
+        # uncertainty = 1 / (count + 1)
+        uncertainty = 1 / (count**2 + 1)
+        self.curiosities[self.sensors.tobytes()] = (
+            self.curiosities[self.sensors.tobytes()]
+            + uncertainty * self.curiosity_scale
+        )
+        curiosity = self.curiosities[self.sensors.tobytes()]
+
+        # Find the most valuable action, including the influence of curiosity
+        max_value = np.max(values + curiosity)
+        # Make the  of existing experience.
+        # In the case where there are multiple matches for the highest value,
+        # randomly pick one of them. This is especially useful
+        # in the beginning when all the values are zero.
+        i_action = np.random.choice(
+            np.where((values + curiosity) == max_value)[0]
+        )
 
         self.actions = np.zeros(self.n_actions)
         self.actions[i_action] = 1
+
+        # Reset the curiosity counter on the selected state-action pair.
+        self.curiosities[self.sensors.tobytes()][i_action] = 0
+        self.counts[self.sensors.tobytes()][i_action] += 1
 
         if self.i_step % self.report_steps == 0:
             self.display()

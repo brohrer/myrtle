@@ -57,17 +57,6 @@ class BaseWorld:
             self.reset()
 
             while self.i_step < self.n_time_steps:
-                self.pm.beat()
-
-                # Read q
-                # If all goes well, there should be exactly one action
-                # array in the queue.
-                # If multiple, use the last and ignore others.
-                # If none, use an all-zeros action.
-                self.actions = np.zeros(self.n_actions)
-                while not self.action_q.empty():
-                    msg = self.action_q.get()
-                    self.actions = msg["actions"]
 
                 self.step()
                 self.log_step()
@@ -93,6 +82,13 @@ class BaseWorld:
         """
         Extend this class and implement your own step()
         """
+        # This block or something like it will probably be needed in
+        # the step() of every world.
+        ####
+        self.pm.beat()
+        self.read_action_q()
+        ####
+
         try:
             i_action = np.where(self.actions)[0][0]
         except IndexError:
@@ -111,6 +107,17 @@ class BaseWorld:
         self.rewards[2] = i_action / (self.i_step + 1)
         if i_action < self.n_rewards:
             self.rewards[i_action] = None
+
+    def read_action_q(self):
+        # Read q
+        # If all goes well, there should be exactly one action
+        # array in the queue.
+        # If multiple, use the last and ignore others.
+        # If none, use an all-zeros action.
+        self.actions = np.zeros(self.n_actions)
+        while not self.action_q.empty():
+            msg = self.action_q.get()
+            self.actions = msg["actions"]
 
     def initialize_log(self, log_name, log_dir, logging_level):
         if log_name is not None:

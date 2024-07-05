@@ -59,6 +59,9 @@ class StationaryBandit(BaseWorld):
             f"step {self.i_step}, episode {self.i_episode}              ",
             end="\r",
         )
+        self.pm.beat()
+        self.read_action_q()
+
         self.rewards = [0] * self.n_actions
         for i in range(self.n_actions):
             if np.random.sample() < self.bandit_hit_rates[i]:

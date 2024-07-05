@@ -70,6 +70,8 @@ class OneHotContextualBandit(BaseWorld):
             f"step {self.i_step}, episode {self.i_episode}              ",
             end="\r",
         )
+        self.pm.beat()
+        self.read_action_q()
 
         # Shuffle and sense the order of the bandits.
         order = np.arange(self.n_actions)

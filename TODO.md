@@ -1,16 +1,10 @@
-- Publish Myrtle with demo
-  - push
-  - pypi
-  - Share on Mastodon
-  - Share on LinkedIn
-
 - Create new Worlds
-  - Pendulum
   - Cart pole
-  - Double pendulum.
+  - Double pendulum
   - Mountain car line
 
 - Build new components
+  - Incremental mean and variance estimate
   - Simulation
   - Animation
   - Monitoring

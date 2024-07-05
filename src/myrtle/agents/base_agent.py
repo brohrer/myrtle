@@ -36,12 +36,6 @@ class BaseAgent:
         self.i_episode += 1
         self.i_step = 0
 
-    def step(self):
-        # Pick a random action.
-        self.actions = np.zeros(self.n_actions)
-        i_action = np.random.choice(self.n_actions)
-        self.actions[i_action] = 1
-
     def run(self):
         while True:
             # It's possible that there may be more than one batch of sensor
@@ -90,6 +84,12 @@ class BaseAgent:
             self.i_step += 1
 
             self.action_q.put({"actions": self.actions})
+
+    def step(self):
+        # Pick a random action.
+        self.actions = np.zeros(self.n_actions)
+        i_action = np.random.choice(self.n_actions)
+        self.actions[i_action] = 1
 
     def initialize_log(self, log_name, log_dir, logging_level):
         if log_name is not None:

@@ -64,6 +64,8 @@ class NonStationaryBandit(BaseWorld):
             f"step {self.i_step}, episode {self.i_episode}              ",
             end="\r",
         )
+        self.pm.beat()
+        self.read_action_q()
 
         if self.i_step < self.time_step_switch:
             bandit_hit_rates = self.bandit_hit_rates_pre
