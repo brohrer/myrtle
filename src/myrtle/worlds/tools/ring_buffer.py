@@ -25,9 +25,9 @@ class RingBuffer:
         n_left = self.n - self.i
         if m > n_left:
             # If wrapping is necessary
-            self.x[self.i :] += arr[: n_left]
+            self.x[self.i :] += arr[:n_left]
             n_wrap = m - n_left
-            self.x[: n_wrap] = arr[n_left :]
+            self.x[:n_wrap] = arr[n_left:]
 
         else:
             # If no wrapping is necessary

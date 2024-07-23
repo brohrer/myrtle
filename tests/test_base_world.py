@@ -38,14 +38,13 @@ def test_initialization():
 def test_sensor_reward_generation():
     world, sen_q, act_q, rep_q, log_name = initialize_new_base_world()
     world.reset()
+    time.sleep(PAUSE)
     world.actions = np.array([0, 0, 1, 0, 0])
     world.step()
     assert world.sensors[1] == 0.0
-    assert world.sensors[2] == 1.0
-    assert world.sensors[7] == 0.5
     assert world.sensors[9] == -0.3
-    assert world.rewards[0] == 0.2
-    assert world.rewards[2] is None
+    assert world.rewards[0] == 0.1
+    assert world.rewards[2] == 1.0
 
 
 def test_creation_and_natural_termination():

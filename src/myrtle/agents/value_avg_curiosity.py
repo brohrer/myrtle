@@ -88,7 +88,9 @@ class ValueAvgCuriosity(BaseAgent):
         # (In it's current implementation, there will never be more than one.)
         try:
             previous_action = np.where(self.actions > self.action_threshold)[0][0]
-            previous_count = self.counts[self.previous_sensors.tobytes()][previous_action]
+            previous_count = self.counts[self.previous_sensors.tobytes()][
+                previous_action
+            ]
             self.q_values[self.previous_sensors.tobytes()][previous_action] = (
                 1 - 1 / (previous_count + 1)
             ) * self.q_values[self.previous_sensors.tobytes()][previous_action] + (
@@ -115,9 +117,7 @@ class ValueAvgCuriosity(BaseAgent):
         # In the case where there are multiple matches for the highest value,
         # randomly pick one of them. This is especially useful
         # in the beginning when all the values are zero.
-        i_action = np.random.choice(
-            np.where((values + curiosity) == max_value)[0]
-        )
+        i_action = np.random.choice(np.where((values + curiosity) == max_value)[0])
 
         self.actions = np.zeros(self.n_actions)
         self.actions[i_action] = 1

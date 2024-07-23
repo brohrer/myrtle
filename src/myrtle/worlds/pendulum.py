@@ -1,4 +1,3 @@
-import time
 import numpy as np
 from myrtle.worlds.base_world import BaseWorld
 from myrtle.worlds.tools.ring_buffer import RingBuffer
@@ -25,10 +24,23 @@ class Pendulum(BaseWorld):
     ):
         # Positive actions are counter-clockwise torque
         # Negative actions are clockwise torque in Newton-meters
-        self.action_scale = 8 * np.array([
-            -1.0, -0.75, -0.5, -0.375, -0.25, -0.125,
-            0.0, 0.125, 0.25, 0.375, 0.5, 0.75, 1.0,
-        ])
+        self.action_scale = 8 * np.array(
+            [
+                -1.0,
+                -0.75,
+                -0.5,
+                -0.375,
+                -0.25,
+                -0.125,
+                0.0,
+                0.125,
+                0.25,
+                0.375,
+                0.5,
+                0.75,
+                1.0,
+            ]
+        )
         self.n_actions = self.action_scale.size
 
         self.n_rewards = 1
@@ -61,7 +73,7 @@ class Pendulum(BaseWorld):
 
         self.mass = 1  # kilogram
         self.length = 2  # meter
-        self.inertia = self.mass * self.length ** 2 / 12
+        self.inertia = self.mass * self.length**2 / 12
         self.gravity = -9.8  # meters / second^2
         self.friction = -0.30  # Newton-meters-seconds / radian
 
@@ -75,10 +87,10 @@ class Pendulum(BaseWorld):
         self.action_q = action_q
         self.report_q = report_q
 
+        self.reset()
+
         self.pm = Pacemaker(self.sim_steps_per_second * speedup)
         self.initialize_log(log_name, log_dir, logging_level)
-
-        self.reset()
 
     def reset(self):
         # This block or something like it will probably be needed in
@@ -174,15 +186,15 @@ class Pendulum(BaseWorld):
         # Build a string showing the current angle of the pendulum.
         n_angles = 72
         i_angle = 1 + int(n_angles * self.position / (2 * np.pi))
-        position_list = ["_"] * (n_angles +  1)
+        position_list = ["_"] * (n_angles + 1)
         position_list[i_angle] = "0"
         position_string = "".join(position_list)
         print(position_string, "             ")
         print(
             "0        45       90      120     -180-     225      270      315      360"
         )
-        angle = int(self.position * 360 / (2 * np.pi))
-        angular_vel = int(self.velocity * 360 / (2 * np.pi))
+        # angle = int(self.position * 360 / (2 * np.pi))
+        # angular_vel = int(self.velocity * 360 / (2 * np.pi))
 
         print("", flush=True)
 

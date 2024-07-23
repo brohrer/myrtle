@@ -11,6 +11,7 @@ class StationaryBandit(BaseWorld):
         report_q=None,
         n_time_steps=1000,
         n_episodes=1,
+        steps_per_second=100,
         log_name=None,
         log_dir=".",
         logging_level="info",
@@ -19,7 +20,7 @@ class StationaryBandit(BaseWorld):
         self.n_sensors = 0
         self.n_actions = 5
         self.n_rewards = 5
-        self.steps_per_second = 100
+        self.steps_per_second = steps_per_second
 
         # Number of time steps to run in a single episode
         self.n_time_steps = n_time_steps

@@ -72,9 +72,7 @@ def test_learning_rate_updating():
 
     agent.previous_sensors = np.array([1, 2, 3, 4])
     agent.sensors = np.array([1, 2, 3, 4])
-    agent.q_values[agent.previous_sensors.tobytes()] = np.zeros(
-        agent.n_actions
-    )
+    agent.q_values[agent.previous_sensors.tobytes()] = np.zeros(agent.n_actions)
     agent.actions = np.array([0, 1, 0])
     agent.rewards = np.array([0, 128])
 
@@ -113,9 +111,7 @@ def test_discount_factor_updating():
 
     agent.previous_sensors = np.array([1, 2, 3, 4])
     agent.sensors = np.array([1, 2, 3, 4])
-    agent.q_values[agent.previous_sensors.tobytes()] = np.zeros(
-        agent.n_actions
-    )
+    agent.q_values[agent.previous_sensors.tobytes()] = np.zeros(agent.n_actions)
     agent.q_values[agent.sensors.tobytes()] = np.ones(agent.n_actions) * 100
     agent.actions = np.array([0, 1, 0])
     agent.rewards = np.array([0, 12])

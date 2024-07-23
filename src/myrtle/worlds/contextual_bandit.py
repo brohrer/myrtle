@@ -19,6 +19,7 @@ class ContextualBandit(BaseWorld):
         report_q=None,
         n_time_steps=1000,
         n_episodes=1,
+        steps_per_second=50,
         log_name=None,
         log_dir=".",
         logging_level="info",
@@ -27,7 +28,7 @@ class ContextualBandit(BaseWorld):
         self.n_sensors = 4
         self.n_actions = 4
         self.n_rewards = 4
-        self.steps_per_second = 1000
+        self.steps_per_second = steps_per_second
 
         # Number of time steps to run in a single episode
         self.n_time_steps = n_time_steps
@@ -64,10 +65,10 @@ class ContextualBandit(BaseWorld):
         self.rewards = [0] * self.n_rewards
 
     def step(self):
-        # print(
-        #     f"step {self.i_step}, episode {self.i_episode}              ",
-        #     end="\r",
-        # )
+        print(
+            f"step {self.i_step}, episode {self.i_episode}              ",
+            end="\r",
+        )
 
         self.pm.beat()
         self.read_action_q()
@@ -75,10 +76,7 @@ class ContextualBandit(BaseWorld):
         # Calculate the reward based on the shuffled order of the previous time step.
         self.rewards = [0] * self.n_actions
         for i in range(self.n_actions):
-            if (
-                np.random.sample()
-                < self.bandit_hit_rates[self.bandit_order[i]]
-            ):
+            if np.random.sample() < self.bandit_hit_rates[self.bandit_order[i]]:
                 self.rewards[i] = (
                     self.actions[i] * self.bandit_payouts[self.bandit_order[i]]
                 )
