@@ -1,9 +1,10 @@
 import numpy as np
 from myrtle.agents.base_agent import BaseAgent
 from cartographer.model import NaiveCartographer as Model
+from ziptie.algo import Ziptie
 
 
-class FNCOneStepCuriosity(BaseAgent):
+class FNCZiptieOneStep(BaseAgent):
     """
     An agent that uses the Fuzzy Naive Cartographer (FNC) as a world model.
 
@@ -16,14 +17,16 @@ class FNCOneStepCuriosity(BaseAgent):
     def __init__(
         self,
         n_sensors=None,
+        n_features=None,
         n_actions=None,
         n_rewards=None,
         action_threshold=0.5,
         curiosity_scale=1.0,
         exploitation_factor=1.0,
-        feature_decay_rate=0.35,
+        feature_decay_rate=0.5,
         trace_decay_rate=0.3,
-        reward_update_rate=0.3,
+        reward_update_rate=0.1,
+        ziptie_threshold=100.0,
         sensor_q=None,
         action_q=None,
         log_name=None,
@@ -32,13 +35,19 @@ class FNCOneStepCuriosity(BaseAgent):
     ):
         self.name = "Naive Cartographer with One-Step Lookahead and Curiosity"
         self.n_sensors = n_sensors
+        if n_features is None:
+            self.n_max_features = n_sensors
+        else:
+            self.n_max_features = n_features
         self.n_actions = n_actions
         self.n_rewards = n_rewards
         self.sensor_q = sensor_q
         self.action_q = action_q
 
+        self.ziptie = Ziptie(n_cables=self.n_sensors, threshold=ziptie_threshold)
+
         self.model = Model(
-            n_sensors=self.n_sensors,
+            n_sensors=self.n_max_features,
             n_actions=self.n_actions,
             n_rewards=self.n_rewards,
             feature_decay_rate=feature_decay_rate,
@@ -81,6 +90,7 @@ class FNCOneStepCuriosity(BaseAgent):
     def reset(self):
         self.display()
         self.sensors = np.zeros(self.n_sensors)
+        self.features = np.zeros(self.n_max_features)
         self.previous_sensors = np.zeros(self.n_sensors)
         self.actions = np.zeros(self.n_actions)
         self.rewards = [0] * self.n_rewards
@@ -100,7 +110,15 @@ class FNCOneStepCuriosity(BaseAgent):
         self.reward_history.append(reward)
         self.reward_history.pop(0)
 
-        self.model.update_sensors_and_rewards(self.sensors, self.rewards)
+        if self.ziptie.n_bundles < self.n_max_features:
+            self.ziptie.create_new_bundles()
+            self.ziptie.grow_bundles()
+
+        features = self.ziptie.update_bundles(self.sensors)
+        self.features = np.zeros(self.n_max_features)
+        self.features[: features.size] = features
+
+        self.model.update_sensors_and_rewards(self.features, self.rewards)
 
         # Plan using one-step lookahead.
         # Choose a single action to take on this time step by looking ahead
@@ -168,6 +186,10 @@ class FNCOneStepCuriosity(BaseAgent):
             f"Average reward of {avg_reward} at time step {self.i_step:,},"
             + f" episode {self.i_episode}"
         )
+        n_2_cable_bundles = (np.where(self.ziptie.n_cables_by_bundle == 2)[0]).size
+        print(f"{self.ziptie.n_bundles} bundles created")
+        # print(f"{self.ziptie.n_bundles} bundles created, 2 cable bundles {n_2_cable_bundles}")
+        print()
         n_lines = 4
         for _ in range(n_lines):
             print()

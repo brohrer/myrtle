@@ -4,11 +4,15 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "myrtle"
-version = "0.0.5"
+version = "0.1.0"
 authors = [
   { name="Brandon Rohrer", email="brohrer@gmail.com" },
 ]
-description = "A benchmarking framework for real-time RL with multiple intermittent rewards"
+description = '''
+A workbench and benchmarking framework
+for real-time reinforcement learning
+with multiple intermittent rewards'''
+
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = [
@@ -27,11 +31,11 @@ Homepage = "https://codeberg.org/brohrer/myrtle"
 Documentation = "https://codeberg.org/brohrer/myrtle/src/branch/main/README.md"
 Repository = "https://codeberg.org/brohrer/myrtle.git"
 
-[tool.flake8]
-max-line-length = 88
+# configuration set in myrtle/.flake8
+# [tool.flake8]
+# max-line-length = 88
 
 [tool.pytest.ini_options]
 addopts = [
     "--import-mode=importlib",
 ]
-

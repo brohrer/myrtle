@@ -109,12 +109,12 @@ class Pendulum(BaseWorld):
         self.position = 0  # radians
         self.velocity = 0  # radians per second
 
-        self.reset_sensors()
-
         self.torque_buffer = RingBuffer(self.sim_steps_per_step)
 
         # Action convention: [counter-clockwise torque, clockwise torque, no torque]
         self.actions = np.zeros(self.n_actions)
+
+        self.reset_sensors()
 
         self.rewards = [0] * self.n_rewards
         self.smoothed_reward = 0.0

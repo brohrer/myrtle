@@ -96,7 +96,7 @@ class BaseWorld:
         # Some arbitrary, but deterministic behavior.
         self.sensors = np.zeros(self.n_sensors)
         self.sensors[: self.n_actions] = self.actions
-        self.sensors[self.n_actions: 2 * self.n_actions] = 0.8 * self.actions - 0.3
+        self.sensors[self.n_actions : 2 * self.n_actions] = 0.8 * self.actions - 0.3
 
         self.rewards = [0] * self.n_rewards
         self.rewards[0] = i_action / 10
