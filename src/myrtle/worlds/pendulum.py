@@ -176,12 +176,12 @@ class Pendulum(BaseWorld):
         self.sensors = np.array([self.position, self.velocity])
 
     def display(self):
-        n_lines = 4
+        n_lines = 3
 
-        print(
-            f"reward {self.smoothed_reward:.3}  at step {self.i_step:,},"
-            + f" episode {self.i_episode}                                        "
-        )
+        # print(
+        #     f"reward {self.smoothed_reward:.3}  at step {self.i_step:,},"
+        #     + f" episode {self.i_episode}                                        "
+        # )
 
         # Build a string showing the current angle of the pendulum.
         n_angles = 72

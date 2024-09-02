@@ -3,12 +3,19 @@ import multiprocessing as mp
 mp.set_start_method("fork")
 
 import time  # noqa: E402
+from myrtle import bench_dash  # noqa: E402
 from myrtle.agents import base_agent  # noqa: E402
 from myrtle.worlds import base_world  # noqa: E402
 from sqlogging import logging  # noqa: E402
 
 PAUSE = 0.01  # seconds
 DB_NAME_DEFAULT = "bench"
+
+WINDOWS_LEFT_PIXEL = 0
+WINDOWS_TOP_PIXEL = 0
+WINDOWS_WIDTH_PIXELS = 1800
+WINDOWS_HEIGHT_PIXELS = 1000
+BENCH_HEIGHT_FRACTION = 0.4
 
 
 def run(
@@ -17,6 +24,13 @@ def run(
     timeout=None,
     record=True,
     db_name=DB_NAME_DEFAULT,
+    # (x, y, width, height)
+    window_pixels=(
+        WINDOWS_LEFT_PIXEL,
+        WINDOWS_TOP_PIXEL,
+        WINDOWS_WIDTH_PIXELS,
+        WINDOWS_HEIGHT_PIXELS,
+    ),
     agent_args={},
     world_args={},
 ):
@@ -31,6 +45,14 @@ def run(
     db_name (str)
     A filename or path + filename to the database where the benchmark results are
     collected.
+
+    window_pixels (tuple(int))
+    The location of the windows for myrtle's dashboard constellation.
+        * x-pixel of the left edge of the window
+        * y-pixel of the top edge of the window
+            (counting down from the top of the screen)
+        * width of the window in pixels
+        * height of the window in pixels
     """
     run_timestamp = time.time()
 
@@ -54,8 +76,16 @@ def run(
                 ],
             )
 
+    x, y, width, height = window_pixels
+    bench_height = int(height * BENCH_HEIGHT_FRACTION)
+    half_width = int(width / 2)
+    bench_window = (x, y, half_width, bench_height)
+    world_window = (x, y + bench_height, half_width, height - bench_height)
+    agent_window = (x + half_width, y, half_width, height)
+
     sensor_q = mp.Queue()
     action_q = mp.Queue()
+    dash_q = mp.Queue()
     report_q = mp.Queue()
 
     world = World(
@@ -83,15 +113,29 @@ def run(
     p_agent.start()
     p_world.start()
 
+    p_dash = mp.Process(target=bench_dash.run, args=(dash_q, bench_window))
+    p_dash.start()
+
     total_reward = 0.0
     total_steps = 0
     while True:
+        # This is a blocking call.
+        # It serves as the pacemaker for this loop.
         msg = report_q.get()
         try:
             if msg["terminated"]:
                 break
         except KeyError:
             pass
+        # Empty the queue in case is gets behind.
+        # But check for termination each time.
+        while not report_q.empty():
+            msg = report_q.get()
+            try:
+                if msg["terminated"]:
+                    break
+            except KeyError:
+                pass
 
         reward = 0.0
         for reward_channel in msg["rewards"]:
@@ -103,6 +147,8 @@ def run(
 
         step = msg["step"]
         episode = msg["episode"]
+        dash_q.put((reward, step, episode))
+
         if record:
             log_data = {
                 "reward": reward,
