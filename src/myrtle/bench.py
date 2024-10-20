@@ -15,7 +15,8 @@ WINDOWS_LEFT_PIXEL = 0
 WINDOWS_TOP_PIXEL = 0
 WINDOWS_WIDTH_PIXELS = 1800
 WINDOWS_HEIGHT_PIXELS = 1000
-BENCH_HEIGHT_FRACTION = 0.4
+WINDOW_TITLE_HEIGHT = 100
+BENCH_HEIGHT_FRACTION = 0.35
 
 
 def run(
@@ -77,11 +78,26 @@ def run(
             )
 
     x, y, width, height = window_pixels
-    bench_height = int(height * BENCH_HEIGHT_FRACTION)
+    bench_height = int(height * BENCH_HEIGHT_FRACTION) # - WINDOW_TITLE_HEIGHT
     half_width = int(width / 2)
-    bench_window = (x, y, half_width, bench_height)
-    world_window = (x, y + bench_height, half_width, height - bench_height)
-    agent_window = (x + half_width, y, half_width, height)
+    bench_window = (
+        x,
+        y,
+        half_width,
+        bench_height
+    )
+    world_window = (
+        x,
+        y + bench_height + WINDOW_TITLE_HEIGHT,
+        half_width,
+        height - bench_height - WINDOW_TITLE_HEIGHT
+    )
+    agent_window = (
+        x + half_width,
+        y,
+        half_width,
+        height - WINDOW_TITLE_HEIGHT
+    )
 
     sensor_q = mp.Queue()
     action_q = mp.Queue()
@@ -89,7 +105,11 @@ def run(
     report_q = mp.Queue()
 
     world = World(
-        sensor_q=sensor_q, action_q=action_q, report_q=report_q, **world_args
+        sensor_q=sensor_q,
+        action_q=action_q,
+        report_q=report_q,
+        window_pixels=world_window,
+        **world_args
     )
     n_sensors = world.n_sensors
     n_actions = world.n_actions

@@ -137,7 +137,8 @@ class QLearningCuriosity(BaseAgent):
         self.counts[self.sensors.tobytes()][i_action] += 1
 
         if self.i_step % self.report_steps == 0:
-            self.display()
+            # self.display()
+            pass
 
         # Make sure to make a copy here, so that previous_sensors and sensors don't
         # end up pointing at the same Numpy Array object.

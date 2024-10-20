@@ -1,4 +1,6 @@
+import multiprocessing as mp
 import numpy as np
+from myrtle.worlds import pendulum_dash
 from myrtle.worlds.base_world import BaseWorld
 from myrtle.worlds.tools.ring_buffer import RingBuffer
 from pacemaker.pacemaker import Pacemaker
@@ -21,6 +23,7 @@ class Pendulum(BaseWorld):
         log_name=None,
         log_dir=".",
         logging_level="info",
+        window_pixels=None,
     ):
         # Positive actions are counter-clockwise torque
         # Negative actions are clockwise torque in Newton-meters
@@ -59,9 +62,9 @@ class Pendulum(BaseWorld):
         )
         self.steps_per_second = self.sim_steps_per_second / self.sim_steps_per_step
 
-        approx_displays_per_second = 30
-        self.sim_steps_per_display = int(
-            self.sim_steps_per_second / approx_displays_per_second
+        vis_updates_per_second = 60
+        self.sim_stpes_per_vis_update = int(
+            self.sim_steps_per_second / vis_updates_per_second
         )
         self.reward_smoothing = 0.003
 
@@ -91,6 +94,13 @@ class Pendulum(BaseWorld):
 
         self.pm = Pacemaker(self.sim_steps_per_second * speedup)
         self.initialize_log(log_name, log_dir, logging_level)
+
+        self.using_dash = window_pixels is not None
+        if self.using_dash:
+            self.dash_q = mp.Queue()
+            p_dash = mp.Process(target=pendulum_dash.run, args=(self.dash_q, window_pixels))
+            p_dash.start()
+
 
     def reset(self):
         # This block or something like it will probably be needed in
@@ -160,8 +170,11 @@ class Pendulum(BaseWorld):
             # Keep position in the range of [0, 2 pi)
             self.position = np.mod(self.position, 2 * np.pi)
 
-            if self.i_sim_step % self.sim_steps_per_display == 0:
-                self.display()
+            if self.i_sim_step % self.sim_stpes_per_vis_update == 0:
+            #     self.display()
+                if self.using_dash:
+                    current_reward = 1.0 - np.cos(self.position)
+                    self.dash_q.put((self.position, self.velocity, current_reward))
 
         # Calculate the reward based on the position of the pendulum.
         self.rewards = [1.0 - np.cos(self.position)]

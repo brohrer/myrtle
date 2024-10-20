@@ -15,13 +15,14 @@ TIMEOUT = 2.0  # seconds
 STEP_HISTORY_LENGTH = 120
 EPISODE_HISTORY_LENGTH = 1000
 
+WINDOW_TITLE = "Workbench Dash"
 BACKGROUND_COLOR = "#000000"
 FOREGROUND_COLOR = "#BBBBBB"
 SECOND_COLOR = "#666666"
 BORDER_VERT = 0.12
 BORDER_HORIZ = 0.08
 STEP_LINE_PARAMS = {
-    "color": SECOND_COLOR,
+    "color": FOREGROUND_COLOR,
     "linewidth": 1.0,
     # "marker": "o",
     # "markersize": 3,
@@ -85,6 +86,7 @@ CONCERN_ZONE_PARAMS = {
 def run(dash_q, window_pixels):
     frame = Frame(window_pixels=window_pixels)
     pacemaker = Pacemaker(CLOCK_FREQ)
+    last_observation_timestamp = time.time()
 
     while True:
         pacemaker.beat()
@@ -110,7 +112,7 @@ class Frame:
 
         self.fig = plt.figure(
             facecolor=BACKGROUND_COLOR,
-            num="Workbench Dash",
+            num=WINDOW_TITLE,
         )
 
         # Set the window location for the dashboard.
