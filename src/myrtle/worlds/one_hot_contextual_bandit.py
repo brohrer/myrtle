@@ -17,15 +17,9 @@ class OneHotContextualBandit(BaseWorld):
 
     def __init__(
         self,
-        sensor_q=None,
-        action_q=None,
-        report_q=None,
         n_time_steps=1000,
         n_episodes=1,
         steps_per_second=50,
-        log_name=None,
-        log_dir=".",
-        logging_level="info",
     ):
         # Initialize constants
         self.n_sensors = 16
@@ -42,12 +36,15 @@ class OneHotContextualBandit(BaseWorld):
         # This gets incremented to 0 with the first reset(), before the run starts.
         self.i_episode = -1
 
-        self.sensor_q = sensor_q
-        self.action_q = action_q
-        self.report_q = report_q
+        # self.sensor_q = sensor_q
+        # self.action_q = action_q
+        # self.report_q = report_q
 
         self.pm = Pacemaker(self.steps_per_second)
-        self.initialize_log(log_name, log_dir, logging_level)
+        # self.initialize_log(log_name, log_dir, logging_level)
+
+        # Initialize message queue connection.
+        self.mq = dsmq.connect_to_server(mq_host, mq_port)
 
         # The highest paying bandit is 2 with average payout of .4 * 280 = 112.
         # Others are 50 or less.
@@ -59,7 +56,8 @@ class OneHotContextualBandit(BaseWorld):
         ####
         self.i_step = 0
         if self.i_episode > 0:
-            self.sensor_q.put({"truncated": True})
+            # self.sensor_q.put({"truncated": True})
+            self.mq.put("control", "truncated")
         ####
 
         self.bandit_order = np.arange(self.n_actions)

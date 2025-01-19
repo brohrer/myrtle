@@ -1,3 +1,22 @@
+- get all tests passing
+- write base_agent test in parallel with base_world test
+
+- write integration test suite
+
+
+- get worlds running, one by one
+- initialize all dsmq.clients with host and port from config
+    - takes place in BaseWorld.init_common() only
+- How to handle worlds.init_common()?
+    - All worlds have init_common()
+
+- Start writing integration_test_suite.py
+
+- get agents running one by one
+
+- Pass all tests
+- Clean out commented lines in worlds and agents
+
 - Visual monitoring
   - For top level Myrtle
   - For world

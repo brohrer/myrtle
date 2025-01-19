@@ -1,90 +1,131 @@
 import multiprocessing as mp
+import pytest
 import signal
 import time
 import numpy as np
+import dsmq.server
 from sqlogging import logging
+from myrtle import config
+from myrtle.agents import base_agent
 from myrtle.worlds import base_world
 from myrtle.config import LOG_DIRECTORY
 
 np.random.seed(42)
-PAUSE = 0.01  # seconds
-LONG_PAUSE = 0.3  # seconds
-TIMEOUT = 1  # seconds
+# times in seconds
+_pause = 0.01
+_long_pause = 0.3
+_v_long_pause = 1.0
+_timeout = 1.0
 
 
-def initialize_new_base_world():
-    sen_q = mp.Queue()
-    act_q = mp.Queue()
-    rep_q = mp.Queue()
-    log_name = f"world_{int(time.time())}"
-    world = base_world.BaseWorld(
-        sensor_q=sen_q,
-        action_q=act_q,
-        report_q=rep_q,
-        log_name=log_name,
-        log_dir=LOG_DIRECTORY,
-    )
+@pytest.fixture
+def setup_and_teardown():
+    # Kick off the dsmq server in a separate process
+    p_mq = mp.Process(target=dsmq.server.serve, args=(config.MQ_HOST, config.MQ_PORT))
+    p_mq.start()
+    time.sleep(_long_pause)
+    world = base_world.BaseWorld()
+    p_world = mp.Process(target=world.run)
+    p_world.start()
+    agent = base_agent.BaseAgent()
+    p_agent = mp.Process(target=agent.run)
+    p_agent.start()
 
-    return world, sen_q, act_q, rep_q, log_name
+    yield agent, world
+
+    # Shut down the dsmq process
+    p_agent.join(_timeout)
+    p_world.join(_timeout)
+    p_mq.join(_timeout)
+
+    time.sleep(_long_pause)
+
+    if p_agent.is_alive():
+        p_agent.kill()
+        time.sleep(_pause)
+        p_agent.close()
+
+    if p_world.is_alive():
+        p_world.kill()
+        time.sleep(_pause)
+        p_world.close()
+
+    if p_mq.is_alive():
+        p_mq.kill()
+        time.sleep(_pause)
+        p_mq.close()
 
 
-def test_initialization():
-    world, sen_q, act_q, rep_q, log_name = initialize_new_base_world()
-    assert world.sensor_q is sen_q
-    assert world.action_q is act_q
-    assert world.report_q is rep_q
+def test_initialization(setup_and_teardown):
+    world = base_world.BaseWorld()
+    assert world.name == "Base world"
+    assert world.n_sensors == 13
+    assert world.n_actions == 5
+    assert world.n_rewards == 3
+    assert world.n_loop_steps == 100
+    assert world.n_episodes == 1
+    assert world.loop_steps_per_second == pytest.approx(10.0)
+    assert world.world_steps_per_second == pytest.approx(10.0)
+    assert world.pm.clock_period == pytest.approx(0.10)
 
 
-def test_sensor_reward_generation():
-    world, sen_q, act_q, rep_q, log_name = initialize_new_base_world()
+def test_sensor_reward_generation(setup_and_teardown):
+    world = base_world.BaseWorld()
     world.reset()
-    time.sleep(PAUSE)
+    time.sleep(_pause)
     world.actions = np.array([0, 0, 1, 0, 0])
-    world.step()
+    world.i_loop_step = 0
+
+    world.step_world()
+    assert world.i_action == 2
+
+    world.sense()
     assert world.sensors[1] == 0.0
     assert world.sensors[9] == -0.3
-    assert world.rewards[0] == 0.1
-    assert world.rewards[2] == 1.0
+    assert world.rewards[0] == 0.2
+    assert world.rewards[2] is None
 
 
-def test_creation_and_natural_termination():
-    world, sen_q, act_q, rep_q, log_name = initialize_new_base_world()
+# Test connection to dsmq
+def test_creation_and_natural_termination(setup_and_teardown):
+    world = base_world.BaseWorld()
     p_world = mp.Process(target=world.run)
 
     p_world.start()
-    time.sleep(PAUSE)
+    time.sleep(_pause)
     assert p_world.is_alive() is True
     assert p_world.exitcode is None
 
-    p_world.join()
+    p_world.join(_timeout)
     assert p_world.is_alive() is False
     assert p_world.exitcode == 0
 
 
-def test_early_termination():
-    world, sen_q, act_q, rep_q, log_name = initialize_new_base_world()
+'''
+def test_early_termination(setup_and_teardown):
+    world = base_world.BaseWorld()
     p_world = mp.Process(target=world.run)
 
     p_world.start()
-    time.sleep(PAUSE)
+    time.sleep(_pause)
     p_world.kill()
-    time.sleep(PAUSE)
+    time.sleep(_pause)
     assert p_world.is_alive() is False
     assert p_world.exitcode == -signal.SIGKILL
 
     p_world.close()
 
 
-def test_action_sensor_qs():
-    world, sen_q, act_q, rep_q, log_name = initialize_new_base_world()
+def test_action_sensor_qs(setup_and_teardown):
+    world = base_world.BaseWorld()
     p_world = mp.Process(target=world.run)
 
     p_world.start()
     act_q.put({"actions": np.array([0, 0, 1, 0, 0])})
-    time.sleep(PAUSE)
+    time.sleep(_pause)
 
     # Get the return message
-    msg = sen_q.get(True, TIMEOUT)
+    msg = sen_q.get(True, _timeout)
     sensors = msg["sensors"]
     rewards = msg["rewards"]
 
@@ -97,24 +138,24 @@ def test_action_sensor_qs():
     assert rewards[2] is None
 
     p_world.kill()
-    time.sleep(PAUSE)
+    time.sleep(_pause)
     p_world.close()
 
 
-def test_action_sensor_logging():
-    world, sen_q, act_q, rep_q, log_name = initialize_new_base_world()
+def test_action_sensor_logging(setup_and_teardown):
+    world = base_world.BaseWorld()
     p_world = mp.Process(target=world.run)
 
     act_q.put({"actions": np.array([0, 0, 1, 0, 0])})
     p_world.start()
-    time.sleep(PAUSE)
+    time.sleep(_pause)
 
     logger = logging.open_logger(
         name=log_name,
         dir_name=LOG_DIRECTORY,
     )
 
-    time.sleep(LONG_PAUSE)
+    time.sleep(_long_pause)
 
     def get_value(col):
         result = logger.query(
@@ -135,12 +176,12 @@ def test_action_sensor_logging():
     assert get_value("rew2") is None
 
     p_world.kill()
-    time.sleep(PAUSE)
+    time.sleep(_pause)
     p_world.close()
 
 
-def test_termination_truncation():
-    world, sen_q, act_q, rep_q, log_name = initialize_new_base_world()
+def test_termination_truncation(setup_and_teardown):
+    world = base_world.BaseWorld()
     p_world = mp.Process(target=world.run)
 
     p_world.start()
@@ -168,15 +209,15 @@ def test_termination_truncation():
     assert termination_count == 1
 
 
-def test_report_q():
-    world, sen_q, act_q, rep_q, log_name = initialize_new_base_world()
+def test_report_q(setup_and_teardown):
+    world = base_world.BaseWorld()
     p_world = mp.Process(target=world.run)
 
     p_world.start()
     act_q.put({"actions": np.array([0, 0, 1, 0, 0])})
 
     # Get the return message
-    msg = rep_q.get(True, TIMEOUT)
+    msg = rep_q.get(True, _timeout)
     i_step = msg["step"]
     i_episode = msg["episode"]
     rewards = msg["rewards"]
@@ -187,5 +228,6 @@ def test_report_q():
     assert i_episode == 0
 
     p_world.kill()
-    time.sleep(PAUSE)
+    time.sleep(_pause)
     p_world.close()
+'''

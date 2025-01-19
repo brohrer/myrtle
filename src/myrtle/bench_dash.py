@@ -5,6 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 # import matplotlib.patches as patches
 # from matplotlib.ticker import FixedLocator, FixedFormatter
+import dsmq.client
+from myrtle import config
 
 from pacemaker.pacemaker import Pacemaker
 
@@ -83,17 +85,27 @@ CONCERN_ZONE_PARAMS = {
 """
 
 
-def run(dash_q, window_pixels):
+# def run(dash_q, window_pixels):
+def run(window_pixels):
     frame = Frame(window_pixels=window_pixels)
     pacemaker = Pacemaker(CLOCK_FREQ)
     last_observation_timestamp = time.time()
 
+    mq = dsmq.client.connect(config.MQ_HOST, config.MQ_PORT)
     while True:
         pacemaker.beat()
 
-        while not dash_q.empty():
-            frame.add_observation(dash_q.get())
-            last_observation_timestamp = time.time()
+        # Empty out whatever observations are currently in the queue.
+        while True:
+            # Check whether there is new reward value reported.
+            msg_str = mq.get("world_step")
+            if msg_str == "":
+                mq_empty = True
+                break
+            else:
+                msg = json.loads(msg_str)
+                frame.add_observation(msg)
+                last_observation_timestamp = time.time()
 
         if (time.time() - last_observation_timestamp) > TIMEOUT:
             print("Workbench dashboard has timed out. Shutting it down.")
@@ -106,6 +118,9 @@ class Frame:
     def __init__(self, window_pixels):
         self.reward_history = np.zeros(STEP_HISTORY_LENGTH)
         self.episode_history = -1e100 * np.ones(EPISODE_HISTORY_LENGTH)
+
+        total_reward = 0.0
+        total_steps = 0
 
         self.i_episode = 0
         self.episode_stepwise_history = []
@@ -159,11 +174,28 @@ class Frame:
         plt.show()
 
     def add_observation(self, observation):
-        reward, step, episode = observation
+        # observation = {"rewards":..., "step":..., "episode":...}
+        reward = 0.0
+        try:
+            for reward_channel in observation["rewards"]:
+                if reward_channel is not None:
+                    reward += reward_channel
+        except KeyError:
+            # Rewards not yet populated.
+            pass
+
+        step = observation["step"]
+        episode = observation["episode"]
+
+        total_reward += reward
+        total_steps += 1
+        show_report = False
+
         if episode > self.i_episode:
             episode_mean_reward = np.mean(self.episode_stepwise_history)
             self.episode_stepwise_history = []
             self.i_episode += 1
+            show_report = True
 
             self.episode_history[0] = episode_mean_reward
             self.episode_history = np.roll(self.episode_history, -1)
@@ -172,6 +204,21 @@ class Frame:
 
         self.reward_history[0] = reward
         self.reward_history = np.roll(self.reward_history, -1)
+
+        if show_report:
+            avg_reward = total_reward / total_steps
+            print()
+            if episode > 1:
+                print(
+                    f"Lifetime average reward across {episode} episodes"
+                    + f" of {step} steps each"
+                )
+                print(f"for {agent.name} on {world.name}: {avg_reward}")
+            else:
+                print(
+                    f"    Lifetime average reward for {agent.name}"
+                    + f" on {world.name}: {avg_reward}"
+                )
 
     def update(self):
         self.step_reward_line.set_ydata(self.reward_history)

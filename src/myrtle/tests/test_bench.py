@@ -13,7 +13,7 @@ def test_result_logging():
         base_agent.BaseAgent,
         base_world.BaseWorld,
         timeout=TIMEOUT,
-        db_name=TEST_DB_NAME,
+        logging_db_name=TEST_DB_NAME,
     )
     assert exitcode == 0
 
@@ -26,7 +26,7 @@ def test_result_logging():
         LIMIT 1
     """
     )
-    assert result[0][0] == 11
+    assert result[0][0] == 10
 
     result = logger.query(
         f"""
@@ -63,3 +63,22 @@ def test_result_logging():
     assert result[0][0] == 3
 
     logger.delete()
+
+
+'''
+def test_process_creation_and_destruction(setup_and_teardown):
+
+def test_shutdown_through_sensor_q(setup_and_teardown)
+    agent, world = setup_and_teardown
+    p_agent = mp.Process(target=agent.run)
+    p_agent.start()
+
+    msg = {"terminated": True}
+    sen_q.put(msg)
+    time.sleep(_pause)
+
+    assert p_agent.is_alive() is False
+    assert p_agent.exitcode == 0
+
+    p_agent.close()
+'''

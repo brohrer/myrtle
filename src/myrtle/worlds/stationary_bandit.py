@@ -1,20 +1,23 @@
 import numpy as np
-from myrtle.worlds.base_world import BaseWorld
+import dsmq.client
 from pacemaker.pacemaker import Pacemaker
+from myrtle import config
+from myrtle.worlds.base_world import BaseWorld
 
 
 class StationaryBandit(BaseWorld):
     def __init__(
         self,
-        sensor_q=None,
-        action_q=None,
-        report_q=None,
+        # sensor_q=None,
+        # action_q=None,
+        # report_q=None,
         n_time_steps=1000,
         n_episodes=1,
         steps_per_second=100,
-        log_name=None,
-        log_dir=".",
-        logging_level="info",
+        # window_pixels=None,
+        # log_name=None,
+        # log_dir=".",
+        # logging_level="info",
     ):
         # Initialize constants
         self.n_sensors = 0
@@ -31,12 +34,15 @@ class StationaryBandit(BaseWorld):
         # This gets incremented to 0 with the first reset(), before the run starts.
         self.i_episode = -1
 
-        self.sensor_q = sensor_q
-        self.action_q = action_q
-        self.report_q = report_q
+        # self.sensor_q = sensor_q
+        # self.action_q = action_q
+        # self.report_q = report_q
 
         self.pm = Pacemaker(self.steps_per_second)
-        self.initialize_log(log_name, log_dir, logging_level)
+        # self.initialize_log(log_name, log_dir, logging_level)
+
+        # Initialize message queue connection.
+        self.mq = dsmq.client.connect(config.MQ_HOST, config.MQ_PORT)
 
         # The highest paying bandit is 2 with average payout of .4 * 280 = 112.
         # Others are 100 or less.
@@ -48,7 +54,8 @@ class StationaryBandit(BaseWorld):
         ####
         self.i_step = 0
         if self.i_episode > 0:
-            self.sensor_q.put({"truncated": True})
+            # self.sensor_q.put({"truncated": True})
+            self.mq.put("control", "truncated")
         ####
 
         self.sensors = np.zeros(self.n_sensors)

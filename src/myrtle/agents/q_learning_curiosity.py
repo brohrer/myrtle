@@ -12,18 +12,13 @@ class QLearningCuriosity(BaseAgent):
         curiosity_scale=1.0,
         discount_factor=0.5,
         learning_rate=0.01,
-        sensor_q=None,
-        action_q=None,
-        log_name=None,
-        log_dir=".",
-        logging_level="info",
     ):
+        self.init_common(
+            n_sensors=n_sensors,
+            n_actions=n_actions,
+            n_rewards=n_rewards,
+        )
         self.name = "Q-Learning with Curiosity"
-        self.n_sensors = n_sensors
-        self.n_actions = n_actions
-        self.n_rewards = n_rewards
-        self.sensor_q = sensor_q
-        self.action_q = action_q
 
         # A weight that affects how much influence curiosity has on the
         # agent's decision making process. It gets accumulated across all actions,
@@ -38,14 +33,10 @@ class QLearningCuriosity(BaseAgent):
         # but just in case a world slips in fractional actions add a threshold.
         self.action_threshold = action_threshold
 
-        self.initialize_log(log_name, log_dir, logging_level)
-
         # How often to report progress
         self.report_steps = int(1e4)
 
-        # This will get incremented to 0 by the reset.
-        self.i_episode = -1
-        self.reset()
+        self.previous_sensors = np.zeros(self.n_sensors)
 
         # Store the value table as a dictionary.
         # Keys are sets of sensor readings.
@@ -60,16 +51,12 @@ class QLearningCuriosity(BaseAgent):
 
     def reset(self):
         self.display()
-        self.sensors = np.zeros(self.n_sensors)
         self.previous_sensors = np.zeros(self.n_sensors)
-        self.actions = np.zeros(self.n_actions)
-        self.rewards = [0] * self.n_rewards
         self.reward_history = [0.0] * self.report_steps
 
-        self.i_episode += 1
-        self.i_step = 0
+    def choose_action(self):
+        self.step_common()
 
-    def step(self):
         # Update the running total of actions taken and how much reward they generate.
         reward = 0.0
         for reward_channel in self.rewards:
@@ -93,17 +80,13 @@ class QLearningCuriosity(BaseAgent):
         try:
             previous_action = np.where(self.actions > self.action_threshold)[0][0]
             if self.counts[self.previous_sensors.tobytes()][previous_action] == 1:
-                self.q_values[self.previous_sensors.tobytes()][
-                    previous_action
-                ] = reward
+                self.q_values[self.previous_sensors.tobytes()][previous_action] = reward
             else:
                 self.q_values[self.previous_sensors.tobytes()][previous_action] = (
                     1 - self.learning_rate
                 ) * self.q_values[self.previous_sensors.tobytes()][
                     previous_action
-                ] + self.learning_rate * (
-                    reward + self.discount_factor * max_value
-                )
+                ] + self.learning_rate * (reward + self.discount_factor * max_value)
         except IndexError:
             # Catch the case where there has been no action.
             # This is true for the first iteration.

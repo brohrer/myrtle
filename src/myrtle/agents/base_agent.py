@@ -1,7 +1,12 @@
+import json
 import sys
 import time
 import numpy as np
-from sqlogging import logging
+from myrtle import config
+import dsmq.client
+
+# How long to wait in between attempts to read from the message queue.
+_polling_delay = 0.1  # seconds
 
 
 class BaseAgent:
@@ -10,141 +15,118 @@ class BaseAgent:
         n_sensors=None,
         n_actions=None,
         n_rewards=None,
-        sensor_q=None,
-        action_q=None,
-        log_name=None,
-        log_dir=".",
-        logging_level="info",
     ):
         self.name = "Base agent"
+        self.init_common(
+            n_sensors=n_sensors,
+            n_actions=n_actions,
+            n_rewards=n_rewards,
+        )
+    def init_common(
+        self,
+        n_sensors=None,
+        n_actions=None,
+        n_rewards=None,
+    ):
         self.n_sensors = n_sensors
         self.n_actions = n_actions
         self.n_rewards = n_rewards
-        self.sensor_q = sensor_q
-        self.action_q = action_q
 
-        self.initialize_log(log_name, log_dir, logging_level)
+        # Initialize message queue socket.
+        self.mq = dsmq.client.connect(config.MQ_HOST, config.MQ_PORT)
 
-        # This will get incremented to 0 by the reset.
+    def run(self):
+        run_complete = False
         self.i_episode = -1
-        self.reset()
+        # Episode loop
+        while not run_complete:
+            self.i_episode += 1
+            episode_complete = False
+            self.i_step = -1
+            self.reset()
+            # world->agent->world step loop
+            while not (episode_complete or run_complete):
+                self.i_step += 1
+                step_loop_complete = False
+                # Polling loop, waiting for new inputs
+                while not (step_loop_complete or episode_complete or run_complete):
+                    time.sleep(_polling_delay)
+                    step_loop_complete = self.read_world_step()
+                    # Each time through the polling loop, check
+                    # whether the agent needs to be reset or terminated.
+                    episode_complete, run_complete = self.control_check()
+                    self.write_agent_step()
+
+                self.choose_action()
+                self.write_agent_step()
+
+        self.close()
 
     def reset(self):
         self.sensors = np.zeros(self.n_sensors)
         self.rewards = [0] * self.n_rewards
         self.actions = np.zeros(self.n_actions)
-        self.i_episode += 1
-        self.i_step = 0
 
-    def run(self):
-        while True:
-            # It's possible that there may be more than one batch of sensor
-            # information. The agent will have to handle that case.
-            # Wait around until there is at least one batch.
-            msg = self.sensor_q.get()
-            # If the agent needs to be reset or shut down, handle that.
-            try:
-                if msg["terminated"]:
-                    self.close()
-            except KeyError:
-                pass
-            try:
-                if msg["truncated"]:
-                    self.reset()
-            except KeyError:
-                pass
-
-            # Then check to see if there are are any others.
-            while not self.sensor_q.empty():
-                msg = self.sensor_q.get()
-                # It's important to check for termination or truncation in every
-                # message. Missing one of them is bad news.
-                try:
-                    if msg["terminated"]:
-                        self.close()
-                except KeyError:
-                    pass
-                try:
-                    if msg["truncated"]:
-                        self.reset()
-                except KeyError:
-                    pass
-
-            try:
-                self.sensors = msg["sensors"]
-            except KeyError:
-                pass
-            try:
-                self.rewards = msg["rewards"]
-            except KeyError:
-                pass
-
-            self.step()
-            self.log_step()
-            self.i_step += 1
-
-            self.action_q.put({"actions": self.actions})
-
-    def step(self):
+    def choose_action(self):
         # Pick a random action.
         self.actions = np.zeros(self.n_actions)
         i_action = np.random.choice(self.n_actions)
         self.actions[i_action] = 1
 
-    def initialize_log(self, log_name, log_dir, logging_level):
-        if log_name is not None:
-            # Create the columns and empty row data
-            cols = []
-            for i in range(self.n_sensors):
-                cols.append(f"sen{i}")
-            for i in range(self.n_actions):
-                cols.append(f"act{i}")
-            for i in range(self.n_rewards):
-                cols.append(f"rew{i}")
-            cols.append("i_step")
-            cols.append("i_episode")
-            cols.append("timestamp")
-            cols.append("note")
+    def read_world_step(self):
+        # It's possible that there may be no sensor information available.
+        # If not, just skip to the next iteration of the loop.
+        response = self.mq.get("world_step")
+        self.mq.put("debug", json.dumps(
+            {
+                "episode": 87,
+                "step": 13,
+            }
+        ))
+        if response == "":
+            return False
 
-            # If the logger already exists, clean it out.
-            try:
-                old_logger = logging.open_logger(
-                    name=log_name,
-                    dir_name=log_dir,
-                )
-                old_logger.delete()
-            except RuntimeError:
-                pass
+        # It's possible that there may be more than one batch of sensor
+        # information. If there is, skip to the latest batch.
+        while response != "":
+            msg_str = response
+            response = self.mq.get("world_step")
 
-            self.logger = logging.create_logger(
-                name=log_name,
-                dir_name=log_dir,
-                level=logging_level,
-                columns=cols,
-            )
-        else:
-            self.logger = None
-
-    def log_step(self):
-        if self.logger is not None:
-            self.log_data = {}
-            for i in range(self.n_sensors):
-                self.log_data[f"sen{i}"] = self.sensors[i]
-            for i in range(self.n_actions):
-                self.log_data[f"act{i}"] = self.actions[i]
-            for i in range(self.n_rewards):
-                self.log_data[f"rew{i}"] = self.rewards[i]
-            self.log_data["i_step"] = self.i_step
-            self.log_data["i_episode"] = self.i_episode
-            self.log_data["timestamp"] = time.time()
-
-            self.logger.info(self.log_data)
-
-    def close(self):
-        # If a logger was created, delete it.
+        msg = json.loads(msg_str)
         try:
-            self.logger.delete()
-        except AttributeError:
+            self.sensors = np.array(msg["sensors"])
+        except KeyError:
+            pass
+        try:
+            self.rewards = msg["rewards"]
+        except KeyError:
             pass
 
+        return True
+
+    def write_agent_step(self):
+        msg = json.dumps(
+            {
+                "actions": self.actions.tolist(),
+                "step": self.i_step,
+                "episode": self.i_episode,
+                "timestamp": time.time(),
+            }
+        )
+        self.mq.put("agent_step", msg)
+
+    def control_check(self):
+        episode_complete = False
+        run_complete = False
+        msg = self.mq.get("control")
+        if msg != "":
+            # If this episode is over, begin the next one.
+            if msg == "truncated":
+                episode_complete = True
+            # If the agent needs to be shut down, handle that.
+            if msg == "terminated":
+                run_complete = True
+        return episode_complete, run_complete
+
+    def close(self):
         sys.exit()

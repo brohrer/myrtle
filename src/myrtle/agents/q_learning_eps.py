@@ -87,9 +87,7 @@ class QLearningEpsilon(BaseAgent):
                 1 - self.learning_rate
             ) * self.q_values[self.previous_sensors.tobytes()][
                 previous_action
-            ] + self.learning_rate * (
-                reward + self.discount_factor * max_value
-            )
+            ] + self.learning_rate * (reward + self.discount_factor * max_value)
         except IndexError:
             # Catch the case where there has been no action.
             # This is true for the first iteration.
