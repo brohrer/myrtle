@@ -1,9 +1,8 @@
 import json
-import sys
 import time
 import numpy as np
-from myrtle import config
 import dsmq.client
+from myrtle import config
 
 # How long to wait in between attempts to read from the message queue.
 _polling_delay = 0.1  # seconds
@@ -32,10 +31,19 @@ class BaseAgent:
         self.n_actions = n_actions
         self.n_rewards = n_rewards
 
-        # Initialize message queue socket.
-        self.mq = dsmq.client.connect(config.MQ_HOST, config.MQ_PORT)
+        # Initialize the mq as part of `run()` because it allows
+        # process "spawn" method process foring to work, allowing
+        # this code to run on macOS in addition to Linux.
+        self.mq_initialized = False
+
+    def initialize_mq(self):
+        if not self.mq_initialized:
+            # Initialize message queue socket.
+            self.mq = dsmq.client.connect(config.MQ_HOST, config.MQ_PORT)
+            self.mq_initialized = True
 
     def run(self):
+        self.initialize_mq()
         run_complete = False
         self.i_episode = -1
         # Episode loop
@@ -77,12 +85,6 @@ class BaseAgent:
         # It's possible that there may be no sensor information available.
         # If not, just skip to the next iteration of the loop.
         response = self.mq.get("world_step")
-        self.mq.put("debug", json.dumps(
-            {
-                "episode": 87,
-                "step": 13,
-            }
-        ))
         if response == "":
             return False
 
@@ -129,4 +131,8 @@ class BaseAgent:
         return episode_complete, run_complete
 
     def close(self):
-        sys.exit()
+        # If self.mq has been initialized, close it down.
+        try:
+            self.mq.close()
+        except AttributeError:
+            pass

@@ -1,34 +1,32 @@
+import dsmq.client
+import dsmq.server
+import json
 import multiprocessing as mp
+import sqlite3
+from threading import Thread
+import time
+# mp.set_start_method("fork")
 
-mp.set_start_method("fork")
-
-import json  # noqa: E402
-from threading import Thread  # noqa: E402
-import time  # noqa: E402
-import dsmq.client  # noqa: E402
-import dsmq.server  # noqa: E402
-
-# from myrtle import bench_dash  # noqa: E402
-from myrtle import config  # noqa: E402
-from myrtle.agents import base_agent  # noqa: E402
-from myrtle.worlds import base_world  # noqa: E402
-from pacemaker.pacemaker import Pacemaker  # noqa: E402
-from sqlogging import logging  # noqa: E402
+from myrtle import config
+from myrtle.agents import base_agent
+from myrtle.worlds import base_world
+from pacemaker.pacemaker import Pacemaker
+from sqlogging import logging
 
 _db_name_default = "bench"
 _logging_frequency = 100  # Hz
-_health_check_frequency = 5  # Hz
-_mq_setup_delay = 1.0  # seconds
-_shutdown_delay = 2.0  # seconds
+_health_check_frequency = 10.0  # Hz
+_mq_server_setup_delay = 1.0  # seconds
+_shutdown_delay = 4.0  # seconds
 _kill_delay = 0.01  # seconds
 
 
 def run(
     Agent,
     World,
-    timeout=None,
-    do_logging=True,
+    log_to_db=True,
     logging_db_name=_db_name_default,
+    timeout=None,
     agent_args={},
     world_args={},
 ):
@@ -37,8 +35,8 @@ def run(
     How long in seconds the world and agent are allowed to run
     If None, then there is no timeout.
 
-    do_logging (bool)
-    If True, do_logging the results of this run in the results database.
+    log_to_db (bool)
+    If True, log_to_db the results of this run in the results database.
 
     logging_db_name (str)
     A filename or path + filename to the database where the benchmark results are
@@ -47,9 +45,9 @@ def run(
     control_pacemaker = Pacemaker(_health_check_frequency)
 
     # Kick off the message queue process
-    p_mq = mp.Process(target=dsmq.server.serve, args=(config.MQ_HOST, config.MQ_PORT))
-    p_mq.start()
-    time.sleep(_mq_setup_delay)
+    p_mq_server = mp.Process(target=dsmq.server.serve, args=(config.MQ_HOST, config.MQ_PORT))
+    p_mq_server.start()
+    time.sleep(_mq_server_setup_delay)
 
     world = World(**world_args)
     n_sensors = world.n_sensors
@@ -67,8 +65,12 @@ def run(
     )
 
     # Start up the logging thread, if it's called for.
-    if do_logging:
-        Thread(target=_reward_logging, args=(logging_db_name, agent, world)).start()
+    if log_to_db:
+        t_logging = Thread(
+            target=_reward_logging,
+            args=(logging_db_name, agent, world)
+        )
+        t_logging.start()
 
     p_agent = mp.Process(target=agent.run)
     p_world = mp.Process(target=world.run)
@@ -78,14 +80,15 @@ def run(
 
     # Keep the workbench alive until it's time to close it down.
     # Monitor a "control" topic for a signal to stop everything.
-    mq = dsmq.client.connect(config.MQ_HOST, config.MQ_PORT)
+    mq_client = dsmq.client.connect(config.MQ_HOST, config.MQ_PORT)
+    run_start_time = time.time()
     while True:
         control_pacemaker.beat()
 
         # Check whether a shutdown message has been sent.
         # Assume that there will not be high volume on the "control" topic
         # and just check this once.
-        msg = mq.get("control")
+        msg = mq_client.get("control")
         if msg is None:
             print("dsmq server connection terminated unexpectedly.")
             print("Shutting it all down.")
@@ -93,10 +96,18 @@ def run(
 
         try:
             if msg in ["terminated", "shutdown"]:
-                print("=====================terminated")
+                print("==== workbench run terminated by another process ====")
                 break
         except KeyError:
             pass
+
+        if (
+            timeout is not None and
+            time.time() - run_start_time > timeout
+        ):
+            mq_client.put("control", "terminated")
+            print(f"==== workbench run timed out at {timeout} sec ====")
+            break
 
         # TODO
         # Put heartbeat health checks for agent and world here.
@@ -117,32 +128,34 @@ def run(
     #         + f" on {world.name}: {avg_reward}"
     #     )
 
-    world_exit = p_world.join()
-    agent_exit = p_agent.join()
-    p_mq.join()
+    exitcode = 0
+    if log_to_db:
+        t_logging.join(_shutdown_delay)
+        if t_logging.is_alive():
+            print("    logging didn't shutdown cleanly")
+            exitcode = 1
 
-    if world_exit is None and agent_exit is None:
-        exitcode = 0
-    else:
-        exitcode = 1
+    p_agent.join(_shutdown_delay)
+    p_world.join(_shutdown_delay)
 
     # Clean up any processes that might accidentally be still running.
-    time.time(_shutdown_delay)
-
     if p_world.is_alive():
+        print("    Doing a hard shutdown on world")
+        exitcode = 1
         p_world.kill()
         time.sleep(_kill_delay)
         p_world.close()
 
     if p_agent.is_alive():
+        print("    Doing a hard shutdown on agent")
+        exitcode = 1
         p_agent.kill()
         time.sleep(_kill_delay)
         p_agent.close()
 
-    if p_mq.is_alive():
-        p_mq.kill()
-        time.sleep(_kill_delay)
-        p_mq.close()
+    # Shutdown the mq server last
+    mq_client.shutdown_server()
+    mq_client.close()
 
     return exitcode
 
@@ -156,10 +169,11 @@ def _reward_logging(dbname, agent, world):
             dir_name=config.LOG_DIRECTORY,
             level="info",
         )
-    except RuntimeError:
+    except (sqlite3.OperationalError, RuntimeError):
         # If necessary, create a new logger.
         logger = logging.create_logger(
             name=dbname,
+            dir_name=config.LOG_DIRECTORY,
             columns=[
                 "reward",
                 "step",
@@ -173,12 +187,27 @@ def _reward_logging(dbname, agent, world):
     run_timestamp = time.time()
     logging_pacemaker = Pacemaker(_logging_frequency)
 
-    mq = dsmq.client.connect(config.MQ_HOST, config.MQ_PORT)
+    logging_mq_client = dsmq.client.connect(config.MQ_HOST, config.MQ_PORT)
     while True:
         logging_pacemaker.beat()
 
+        # Check whether a shutdown message has been sent.
+        # Assume that there will not be high volume on the "control" topic
+        # and just check this once.
+        msg = logging_mq_client.get("control")
+        if msg is None:
+            print("dsmq server connection terminated unexpectedly.")
+            print("Shutting it all down.")
+            break
+
+        try:
+            if msg in ["terminated", "shutdown"]:
+                break
+        except KeyError:
+            pass
+
         # Check whether there is new reward value reported.
-        msg_str = mq.get("world_step")
+        msg_str = logging_mq_client.get("world_step")
         if msg_str is None:
             print("dsmq server connection terminated unexpectedly.")
             break
@@ -195,7 +224,7 @@ def _reward_logging(dbname, agent, world):
             # Rewards not yet populated.
             pass
 
-        step = msg["step"]
+        step = msg["loop_step"]
         episode = msg["episode"]
 
         log_data = {
@@ -208,8 +237,10 @@ def _reward_logging(dbname, agent, world):
             "worldname": world.name,
         }
         logger.info(log_data)
-        # debug
-        print(log_data)
+
+    # Gracefully close down logger and mq_client
+    logging_mq_client.close()
+    logger.close()
 
 
 if __name__ == "__main__":

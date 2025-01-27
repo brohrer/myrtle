@@ -94,8 +94,16 @@ class BaseWorld:
 
         self.pm = Pacemaker(self.world_steps_per_second)
 
-        # Initialize message queue connection.
-        self.mq = dsmq.client.connect(config.MQ_HOST, config.MQ_PORT)
+        # Initialize the mq as part of `run()` because it allows
+        # process "spawn" method process foring to work, allowing
+        # this code to run on macOS in addition to Linux.
+        self.mq_initialized = False
+
+    def initialize_mq(self):
+        if not self.mq_initialized:
+            # Initialize message queue socket.
+            self.mq = dsmq.client.connect(config.MQ_HOST, config.MQ_PORT)
+            self.mq_initialized = True
 
     def run(self):
         """
@@ -108,9 +116,12 @@ class BaseWorld:
         If all goes as intended, you won't need to modify this method.
         Of course we both know things never go precisely as intended.
         """
-        self.i_episode = 0
-        while self.i_episode < self.n_episodes:
-            self.i_episode += 1
+        self.initialize_mq()
+        # self.i_episode = -1
+        for i_episode in range(self.n_episodes):
+            self.i_episode = i_episode
+            # while self.i_episode + 1 < self.n_episodes:
+            #     self.i_episode += 1
 
             # `i_loop_step` counts the number of world->agent->world loop iterations,
             # time steps for the RL algo.
@@ -118,14 +129,19 @@ class BaseWorld:
             # These can be much finer, as in the case of a physics simulation or
             # rapidly sampled sensors whose readings are aggregrated before passing
             # them on to the world.
-            self.i_loop_step = 0
-            self.i_world_step = 0
+            # self.i_loop_step = -1
+            # self.i_world_step = -1
 
             self.reset()
 
-            while self.i_loop_step < self.n_loop_steps:
-                for _ in range(self.world_steps_per_loop_step):
-                    self.i_world_step += 1
+            # while self.i_loop_step + 1 < self.n_loop_steps:
+            #     self.i_loop_step += 1
+            for i_loop_step in range(self.n_loop_steps):
+                self.i_loop_step = i_loop_step
+                # for _ in range(self.world_steps_per_loop_step):
+                #     self.i_world_step += 1
+                for i_world_step in range(self.world_steps_per_loop_step):
+                    self.i_world_step = i_world_step
                     self.pm.beat()
 
                     # Trying to read agent action commands on every world step
@@ -135,21 +151,23 @@ class BaseWorld:
                     # an agent taking non-negligible wall clock time to execute.
                     # There's more detail here:
                     # https://www.brandonrohrer.com/rl_noninteger_delay.html
-                    # debug
-                    print(self.i_world_step, self.i_loop_step, self.i_episode)
                     self.read_agent_step()
                     self.step_world()
 
                 self.sense()
                 self.write_world_step()
-                self.i_loop_step += 1
+                time_to_shutdown = self.shutdown_check()
+                if time_to_shutdown:
+                    break
 
+            if time_to_shutdown:
+                break
             # Get ready to start the next episode
             self.mq.put("control", "truncated")
 
         # Wrap up the run
         self.mq.put("control", "terminated")
-        sys.exit()
+        self.close()
 
     def reset(self):
         """
@@ -205,8 +223,7 @@ class BaseWorld:
             agent_msg = self.mq.get("agent_step")
             if agent_msg == "":
                 break
-            print(agent_msg)
-            self.actions = json.loads(agent_msg)["actions"]
+            self.actions = np.array(json.loads(agent_msg)["actions"])
 
     def write_world_step(self):
         msg = json.dumps(
@@ -219,67 +236,18 @@ class BaseWorld:
         )
         self.mq.put("world_step", msg)
 
-    """
-    def initialize_log(self, log_name, log_dir, logging_level):
-        if log_name is not None:
-            # Create the columns and empty row data
-            cols = []
-            for i in range(self.n_sensors):
-                cols.append(f"sen{i}")
-            for i in range(self.n_actions):
-                cols.append(f"act{i}")
-            for i in range(self.n_rewards):
-                cols.append(f"rew{i}")
-            cols.append("loop_step")
-            cols.append("episode")
-            cols.append("timestamp")
-            cols.append("note")
+    def shutdown_check(self):
+        # Check whether there has been at "terminated" control message
+        # issued from the workbench process.
+        time_to_shutdown = False
+        msg = self.mq.get("control")
+        if msg in ["terminated", "shutdown"]:
+            time_to_shutdown = True
+        return time_to_shutdown
 
-            # If the logger already exists, clean it out.
-            try:
-                old_logger = logging.open_logger(
-                    name=log_name,
-                    dir_name=log_dir,
-                )
-                old_logger.delete()
-            except RuntimeError:
-                pass
-
-            self.logger = logging.create_logger(
-                name=log_name,
-                dir_name=log_dir,
-                level=logging_level,
-                columns=cols,
-            )
-        else:
-            self.logger = None
-
-    def log_step(self):
-        if self.logger is not None:
-            self.log_data = {}
-            for i in range(self.n_sensors):
-                self.log_data[f"sen{i}"] = self.sensors[i]
-            for i in range(self.n_actions):
-                self.log_data[f"act{i}"] = self.actions[i]
-            for i in range(self.n_rewards):
-                self.log_data[f"rew{i}"] = self.rewards[i]
-            self.log_data["loop_step"] = self.i_loop_step
-            self.log_data["episode"] = self.i_episode
-            self.log_data["timestamp"] = time.time()
-
-            self.logger.info(self.log_data)
-    """
-
-    """
     def close(self):
-        ## self.sensor_q.put({"terminated": True})
-        ## self.report_q.put({"terminated": True})
-
-        # If a logger was created, delete it.
-        # try:
-        #     self.logger.delete()
-        # except AttributeError:
-        #     pass
-
-        sys.exit()
-    """
+        # If self.mq has been initialized, close it down.
+        try:
+            self.mq.close()
+        except AttributeError:
+            pass

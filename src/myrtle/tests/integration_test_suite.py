@@ -35,6 +35,7 @@ def base_world_base_agent():
         },
     )
 
+
 # bench.run(BaseAgent, StationaryBandit)
 # bench.run(RandomSingleAction, StationaryBandit)
 # bench.run(RandomSingleAction, ContextualBandit)

@@ -1,7 +1,8 @@
 LOG_DIRECTORY = "myrtle_logs"
 
-MQ_HOST = "192.168.1.10"
-MQ_PORT = 38388
+# MQ_HOST = "192.168.1.10"  # loki
+MQ_HOST = "192.168.1.20"  # aidas
+MQ_PORT = 38388  # An arbitrary port
 
 WINDOWS_LEFT_PIXEL = 0
 WINDOWS_TOP_PIXEL = 0
