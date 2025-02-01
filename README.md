@@ -213,13 +213,6 @@ The only other attribute an Agent is expected to have is a name.
 - `name`: `str`, an identifier so that the history of runs with this agent can be
 displayed together and compared against each other.
 
-## `run()` method
-
-Every Agent contains a `run()` method. This is the method that gets
-called by the bench process when it forks a new agent process.
-By convention the `run()` method runs on an infinite loop, at least until it
-receives the message from the World that its services are no longer needed.
-
 ## `BaseAgent`
 
 There is a base implementation of an agent you can use as a foundation for writing

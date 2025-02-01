@@ -1,8 +1,9 @@
 - bump version in `pyproject.toml`
-- revise `README.md`, `TODO.md`
-- `uv run src/myrtle/demo.py`
+- revise `README.md`
+- revise `TODO.md`
 - `uv run pytest`
 - `uv run pytest -s src/myrtle/tests/integration_test_suite.py`
+- `uv run src/myrtle/demo.py`
 - `uvx ruff check`
 - `uvx ruff format`
 - `git add ...`

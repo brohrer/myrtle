@@ -33,13 +33,13 @@ _timeout = 10.0 * 60  # in seconds
 def main():
     # Specify which scenarios to run
     # test_base_world_base_agent()
-    # test_base_world_random_multi_action_agent()
+    test_base_world_random_multi_action_agent()
     # test_base_world_greedy_state_blind_agent()
     # test_base_world_greedy_state_blind_eps_agent()
     # test_base_world_value_avg_curiosity_agent()
     # test_base_world_q_learning_eps_agent()
     # test_base_world_q_learning_curiosity_agent()
-    test_stationary_bandit_world_q_learning_curiosity_agent()
+    # test_stationary_bandit_world_q_learning_curiosity_agent()
     # test_nonstationary_bandit_world_q_learning_curiosity_agent()
     # test_intermittent_reward_bandit_world_q_learning_curiosity_agent()
     # test_contextual_bandit_world_q_learning_curiosity_agent()

@@ -29,6 +29,7 @@ def run(
     timeout=None,
     agent_args={},
     world_args={},
+    verbose=False,
 ):
     """
     timeout (int or None)
@@ -90,20 +91,23 @@ def run(
         # and just check this once.
         msg = mq_client.get("control")
         if msg is None:
-            print("dsmq server connection terminated unexpectedly.")
-            print("Shutting it all down.")
+            if verbose:
+                print("dsmq server connection terminated unexpectedly.")
+                print("Shutting it all down.")
             break
 
         try:
             if msg in ["terminated", "shutdown"]:
-                print("==== workbench run terminated by another process ====")
+                if verbose:
+                    print("==== workbench run terminated by another process ====")
                 break
         except KeyError:
             pass
 
         if timeout is not None and time.time() - run_start_time > timeout:
             mq_client.put("control", "terminated")
-            print(f"==== workbench run timed out at {timeout} sec ====")
+            if verbose:
+                print(f"==== workbench run timed out at {timeout} sec ====")
             break
 
         # TODO
@@ -113,7 +117,8 @@ def run(
     if log_to_db:
         t_logging.join(_shutdown_delay)
         if t_logging.is_alive():
-            print("    logging didn't shutdown cleanly")
+            if verbose:
+                print("    logging didn't shutdown cleanly")
             exitcode = 1
 
     p_agent.join(_shutdown_delay)
@@ -121,14 +126,16 @@ def run(
 
     # Clean up any processes that might accidentally be still running.
     if p_world.is_alive():
-        print("    Doing a hard shutdown on world")
+        if verbose:
+            print("    Doing a hard shutdown on world")
         exitcode = 1
         p_world.kill()
         time.sleep(_kill_delay)
         p_world.close()
 
     if p_agent.is_alive():
-        print("    Doing a hard shutdown on agent")
+        if verbose:
+            print("    Doing a hard shutdown on agent")
         exitcode = 1
         p_agent.kill()
         time.sleep(_kill_delay)
@@ -177,8 +184,9 @@ def _reward_logging(dbname, agent, world):
         # and just check this once.
         msg = logging_mq_client.get("control")
         if msg is None:
-            print("dsmq server connection terminated unexpectedly.")
-            print("Shutting it all down.")
+            if verbose:
+                print("dsmq server connection terminated unexpectedly.")
+                print("Shutting it all down.")
             break
 
         try:
@@ -190,7 +198,8 @@ def _reward_logging(dbname, agent, world):
         # Check whether there is new reward value reported.
         msg_str = logging_mq_client.get("world_step")
         if msg_str is None:
-            print("dsmq server connection terminated unexpectedly.")
+            if verbose:
+                print("dsmq server connection terminated unexpectedly.")
             break
         if msg_str == "":
             continue
