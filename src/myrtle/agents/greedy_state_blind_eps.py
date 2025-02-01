@@ -9,39 +9,26 @@ class GreedyStateBlindEpsilon(BaseAgent):
         n_actions=None,
         n_rewards=None,
         epsilon=0.1,
-        sensor_q=None,
-        action_q=None,
-        log_name=None,
-        log_dir=".",
-        logging_level="info",
     ):
         self.name = "Epsilon-Greedy State-Blind"
-        self.n_sensors = n_sensors
-        self.n_actions = n_actions
-        self.n_rewards = n_rewards
-        self.sensor_q = sensor_q
-        self.action_q = action_q
+        self.init_common(
+            n_sensors=n_sensors,
+            n_actions=n_actions,
+            n_rewards=n_rewards,
+        )
 
         self.epsilon = epsilon
-
-        self.initialize_log(log_name, log_dir, logging_level)
-
-        # This will get incremented to 0 by the reset.
-        self.i_episode = -1
-        self.reset()
 
     def reset(self):
         self.sensors = np.zeros(self.n_sensors)
         self.rewards = [0] * self.n_rewards
         self.actions = np.zeros(self.n_actions)
-        self.i_episode += 1
-        self.i_step = 0
 
         # Initialize these as ones to avoid any numerical wonkery.
         self.total_return = np.ones(self.n_actions)
         self.action_count = np.ones(self.n_actions)
 
-    def step(self):
+    def choose_action(self):
         # Update the running total of actions taken and how much reward they generate.
         reward = 0.0
         for reward_channel in self.rewards:

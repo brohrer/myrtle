@@ -1,55 +1,40 @@
-import multiprocessing as mp
+import pytest
 import time
 import numpy as np
-from myrtle.config import LOG_DIRECTORY
 from myrtle.worlds import stationary_bandit
 
 np.random.seed(42)
-PAUSE = 0.01  # seconds
-TIMEOUT = 1  # seconds
+_log_name = f"world_{int(time.time())}"
 
 
-def initialize_new_world():
-    sen_q = mp.Queue()
-    act_q = mp.Queue()
-    rep_q = mp.Queue()
-    log_name = f"world_{int(time.time())}"
-    world = stationary_bandit.StationaryBandit(
-        sensor_q=sen_q,
-        action_q=act_q,
-        report_q=rep_q,
-        log_name=log_name,
-        log_dir=LOG_DIRECTORY,
-    )
+@pytest.fixture
+def initialize_world():
+    world = stationary_bandit.StationaryBandit()
 
-    return world, sen_q, act_q, rep_q, log_name
+    yield world
 
 
-def test_initialization():
-    world, sen_q, act_q, rep_q, log_name = initialize_new_world()
-    assert world.sensor_q is sen_q
-    assert world.action_q is act_q
-    assert world.report_q is rep_q
+def test_initialization(initialize_world):
+    world = initialize_world
+    assert world.n_sensors == 0
+    assert world.n_actions == 5
+    assert world.n_rewards == 5
 
 
-def test_action_sensor_qs():
-    world, sen_q, act_q, rep_q, log_name = initialize_new_world()
-    p_world = mp.Process(target=world.run)
+def test_sense(initialize_world):
+    world = initialize_world
 
-    p_world.start()
-    time.sleep(PAUSE)
-    act_q.put({"actions": np.array([0, 0, 1, 0, 0])})
+    world.actions = np.zeros(world.n_actions)
+    world.actions[2] = 1
+    hit_reward_2 = world.actions[2] * world.bandit_payouts[2]
+    assert hit_reward_2 == 280
 
-    # Get the return message
-    msg = sen_q.get(True, TIMEOUT)
-    sensors = msg["sensors"]
-    rewards = msg["rewards"]
-
-    assert sensors.size == 0
-    assert len(rewards) == 5
-    assert rewards[0] == 0
-    assert rewards[4] == 0
-
-    p_world.kill()
-    time.sleep(PAUSE)
-    p_world.close()
+    n_tries = 1000
+    sum_reward = 0.0
+    for _ in range(n_tries):
+        world.sense()
+        sum_reward += np.sum(world.rewards)
+    mean_reward = sum_reward / n_tries
+    # Should be 112 +/- some variance
+    assert mean_reward > 106.0
+    assert mean_reward < 118.0

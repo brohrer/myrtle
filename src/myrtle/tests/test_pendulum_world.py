@@ -1,27 +1,43 @@
-import multiprocessing as mp
-import time
-from myrtle.config import LOG_DIRECTORY
+import pytest
+import numpy as np
 from myrtle.worlds import pendulum
 
 
-def initialize_new_world():
-    sen_q = mp.Queue()
-    act_q = mp.Queue()
-    rep_q = mp.Queue()
-    log_name = f"world_{int(time.time())}"
-    world = pendulum.Pendulum(
-        sensor_q=sen_q,
-        action_q=act_q,
-        report_q=rep_q,
-        log_name=log_name,
-        log_dir=LOG_DIRECTORY,
-    )
+@pytest.fixture
+def initialize_world():
+    world = pendulum.Pendulum()
 
-    return world, sen_q, act_q, rep_q, log_name
+    yield world
 
 
-def test_initialization():
-    world, sen_q, act_q, rep_q, log_name = initialize_new_world()
-    assert world.sensor_q is sen_q
-    assert world.action_q is act_q
-    assert world.report_q is rep_q
+def test_initialization(initialize_world):
+    world = initialize_world
+
+    assert world.n_sensors == 2
+    assert world.n_actions == 13
+    assert world.n_rewards == 1
+
+
+def test_reset(initialize_world):
+    world = initialize_world
+
+    assert world.velocity == 0
+    assert world.position == 0
+
+
+def test_sense(initialize_world):
+    world = initialize_world
+    world.sense()
+
+    assert world.rewards[0] < 0.001
+
+
+def test_step_world(initialize_world):
+    world = initialize_world
+    world.actions = np.zeros(world.n_actions)
+    world.actions[-1] = 1
+    world.i_world_step = 0
+    world.step_world()
+
+    assert world.velocity == 0.375
+    assert world.position > 0.005 and world.position < 0.007

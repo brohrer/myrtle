@@ -4,6 +4,10 @@ from threading import Thread
 import time
 import numpy as np
 from myrtle.agents import base_agent
+from myrtle.tests.world_mocks import (
+    multiepisode_world,
+    world_step_random,
+)
 
 # Exclude pytest fixtures from some checks because they behave in peculiar ways.
 from myrtle.tests.fixtures import setup_mq_server, setup_mq_client  # noqa: F401
@@ -30,56 +34,6 @@ def initialize_agent():
     yield agent
 
     agent.close()
-
-
-def world_step_fake(mq, value=0):
-    i_loop_step = int(value)
-    i_episode = int(value)
-    sensors = np.ones(_n_sensors) * value
-    rewards = np.ones(_n_rewards) * value
-    world_step_msg = json.dumps(
-        {
-            "loop_step": i_loop_step,
-            "episode": i_episode,
-            "sensors": sensors.tolist(),
-            "rewards": rewards.tolist(),
-        }
-    )
-    mq.put("world_step", world_step_msg)
-    return value
-
-
-def world_step_random(mq):
-    return world_step_fake(mq, value=np.random.choice(17))
-
-
-def world_step_zero(mq):
-    i_loop_step = 0
-    i_episode = 0
-    sensors = np.zeros(_n_sensors)
-    rewards = np.zeros(_n_rewards)
-    world_step_msg = json.dumps(
-        {
-            "loop_step": i_loop_step,
-            "episode": i_episode,
-            "sensors": sensors.tolist(),
-            "rewards": rewards.tolist(),
-        }
-    )
-    mq.put("world_step", world_step_msg)
-
-
-def multiepisode_world(mq):
-    """
-    A very brief and boring world that simulates two complete episodes.
-    """
-    time.sleep(_pause)
-    world_step_fake(mq, 0)
-    world_step_fake(mq, 1)
-    mq.put("control", "truncated")
-    world_step_fake(mq, 0)
-    world_step_fake(mq, 1)
-    mq.put("control", "terminated")
 
 
 def test_initialization(
@@ -126,7 +80,7 @@ def test_world_step_read(
     agent.reset()
     mq = setup_mq_client
 
-    world_value = world_step_random(mq)
+    world_value = world_step_random(mq, _n_sensors, _n_rewards)
     time.sleep(_pause)
     agent.initialize_mq()
     agent.read_world_step()
@@ -182,7 +136,7 @@ def test_episode_advancement(
 ):
     agent = initialize_agent
     mq = setup_mq_client
-    world = Thread(target=multiepisode_world, args=(mq,))
+    world = Thread(target=multiepisode_world, args=(mq, _n_sensors, _n_rewards))
     world.start()
     agent.run()
 

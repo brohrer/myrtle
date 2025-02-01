@@ -10,6 +10,7 @@ class ContextualBandit(BaseWorld):
     This world tests an agent's ability to use sensor information to determine
     which action to take.
     """
+
     def __init__(
         self,
         n_loop_steps=1000,
@@ -23,7 +24,6 @@ class ContextualBandit(BaseWorld):
         )
         self.name = "Contextual bandit"
 
-        # Initialize constants
         self.n_sensors = 4
         self.n_actions = 4
         self.n_rewards = 4
@@ -35,15 +35,11 @@ class ContextualBandit(BaseWorld):
 
     def reset(self):
         self.bandit_order = np.arange(self.n_actions)
-        self.sensors = self.bandit_order.copy()
+        self.sensors = np.zeros(self.n_sensors)
         self.actions = np.zeros(self.n_actions)
         self.rewards = [0] * self.n_rewards
 
     def sense(self):
-        print(
-            f"step {self.i_loop_step}, episode {self.i_episode}              ",
-            end="\r",
-        )
         # Shuffle and sense the order of the bandits.
         self.bandit_order = np.arange(self.n_actions)
         np.random.shuffle(self.bandit_order)

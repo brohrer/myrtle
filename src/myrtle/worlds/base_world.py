@@ -1,5 +1,4 @@
 import json
-import sys
 import numpy as np
 import dsmq.client
 from myrtle import config
@@ -23,6 +22,7 @@ class BaseWorld:
 
     but you may find you need to dig deeper to get the behaviors you want.
     """
+
     def __init__(
         self,
         n_loop_steps=100,
@@ -81,13 +81,12 @@ class BaseWorld:
         # with the agent will run at another. For convenience and repeatability,
         # ensure that the loop interaction steps contain
         # a consistent number of world time steps.
-        self.world_steps_per_loop_step = int(np.round(
-            world_steps_per_second / loop_steps_per_second
-        ))
+        self.world_steps_per_loop_step = int(
+            np.round(world_steps_per_second / loop_steps_per_second)
+        )
         self.loop_steps_per_second = float(loop_steps_per_second)
         self.world_steps_per_second = float(
-            self.world_steps_per_loop_step *
-            self.loop_steps_per_second
+            self.world_steps_per_loop_step * self.loop_steps_per_second
         )
         self.loop_period = 1 / self.loop_steps_per_second
         self.world_period = 1 / self.world_steps_per_second
@@ -117,11 +116,8 @@ class BaseWorld:
         Of course we both know things never go precisely as intended.
         """
         self.initialize_mq()
-        # self.i_episode = -1
         for i_episode in range(self.n_episodes):
             self.i_episode = i_episode
-            # while self.i_episode + 1 < self.n_episodes:
-            #     self.i_episode += 1
 
             # `i_loop_step` counts the number of world->agent->world loop iterations,
             # time steps for the RL algo.
@@ -134,12 +130,12 @@ class BaseWorld:
 
             self.reset()
 
-            # while self.i_loop_step + 1 < self.n_loop_steps:
-            #     self.i_loop_step += 1
             for i_loop_step in range(self.n_loop_steps):
                 self.i_loop_step = i_loop_step
-                # for _ in range(self.world_steps_per_loop_step):
-                #     self.i_world_step += 1
+                print(
+                    f"episode {self.i_episode}  loop step {self.i_loop_step}", end="\r"
+                )
+
                 for i_world_step in range(self.world_steps_per_loop_step):
                     self.i_world_step = i_world_step
                     self.pm.beat()
@@ -180,6 +176,33 @@ class BaseWorld:
         self.actions = np.zeros(self.n_actions)
         self.rewards = [0] * self.n_rewards
 
+    def read_agent_step(self):
+        # Read in any actions that the agent has put in the message queue.
+        # In a syncronous world-agent loop, there should be exactly one action
+        # array in the queue.
+        #
+        # If there is one action command report it.
+        # If there are multiple, report the last and ignore the others.
+        # If there are none, report an all-zeros action.
+        self.actions = np.zeros(self.n_actions)
+        while True:
+            agent_msg = self.mq.get("agent_step")
+            if agent_msg == "":
+                break
+            self.actions = np.array(json.loads(agent_msg)["actions"])
+
+    def step_world(self):
+        """
+        One step of the (possibly much faster) hardware loop.
+        Evolve the internal state of the world over the loop time step.
+
+        Extend this class and implement your own step_world()
+        """
+        try:
+            self.i_action = np.where(self.actions)[0][0]
+        except IndexError:
+            self.i_action = 1
+
     def sense(self):
         """
         One step of the sense -> act -> reward RL loop.
@@ -198,32 +221,6 @@ class BaseWorld:
         self.rewards[2] = self.i_action / (self.i_loop_step + 1)
         if self.i_action < self.n_rewards:
             self.rewards[self.i_action] = None
-
-    def step_world(self):
-        """
-        One step of the (possibly much faster) hardware loop.
-
-        Extend this class and implement your own step_world()
-        """
-        try:
-            self.i_action = np.where(self.actions)[0][0]
-        except IndexError:
-            self.i_action = 1
-
-    def read_agent_step(self):
-        # Read in any actions that the agent has put in the message queue. 
-        # In a syncronous world-agent loop, there should be exactly one action
-        # array in the queue.
-        # 
-        # If there is one action command report it.
-        # If there are multiple, report the last and ignore the others.
-        # If there are none, report an all-zeros action.
-        self.actions = np.zeros(self.n_actions)
-        while True:
-            agent_msg = self.mq.get("agent_step")
-            if agent_msg == "":
-                break
-            self.actions = np.array(json.loads(agent_msg)["actions"])
 
     def write_world_step(self):
         msg = json.dumps(

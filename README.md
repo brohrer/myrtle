@@ -95,7 +95,19 @@ tests/
 
 The `run()` function in `bench.py` is the entry point.
 
-Run the test suite with `pytest`.
+Run the unit test suite with `pytest`. These typically run in less than
+60 seconds.
+
+```bash
+uv run pytest
+```
+
+Run the integration tests by using pytest on a file it doesn't usually
+gather from, `integration_test_suite.py`. This takes a few hours to
+run.
+```bash
+uv run pytest -s src/myrtle/tests/integration_test_suite.py
+```
 
 # Worlds
 

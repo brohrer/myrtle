@@ -1,6 +1,5 @@
 from multiprocessing import Process
 import os
-import pytest
 import time
 import dsmq.client
 from sqlogging import logging
@@ -116,7 +115,7 @@ def test_result_logging():
 
 
 def test_multiple_runs():
-    exitcode = bench.run(
+    bench.run(
         base_agent.BaseAgent,
         base_world.BaseWorld,
         log_to_db=True,
@@ -129,7 +128,7 @@ def test_multiple_runs():
         },
     )
 
-    exitcode = bench.run(
+    bench.run(
         base_agent.BaseAgent,
         base_world.BaseWorld,
         log_to_db=True,

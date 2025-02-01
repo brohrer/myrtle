@@ -45,7 +45,10 @@ def run(
     control_pacemaker = Pacemaker(_health_check_frequency)
 
     # Kick off the message queue process
-    p_mq_server = mp.Process(target=dsmq.server.serve, args=(config.MQ_HOST, config.MQ_PORT))
+    p_mq_server = mp.Process(
+        target=dsmq.server.serve,
+        args=(config.MQ_HOST, config.MQ_PORT),
+    )
     p_mq_server.start()
     time.sleep(_mq_server_setup_delay)
 
@@ -66,10 +69,7 @@ def run(
 
     # Start up the logging thread, if it's called for.
     if log_to_db:
-        t_logging = Thread(
-            target=_reward_logging,
-            args=(logging_db_name, agent, world)
-        )
+        t_logging = Thread(target=_reward_logging, args=(logging_db_name, agent, world))
         t_logging.start()
 
     p_agent = mp.Process(target=agent.run)
@@ -101,32 +101,13 @@ def run(
         except KeyError:
             pass
 
-        if (
-            timeout is not None and
-            time.time() - run_start_time > timeout
-        ):
+        if timeout is not None and time.time() - run_start_time > timeout:
             mq_client.put("control", "terminated")
             print(f"==== workbench run timed out at {timeout} sec ====")
             break
 
         # TODO
         # Put heartbeat health checks for agent and world here.
-
-    # Put a human-readable report in the console
-    # TODO: read this from the logs
-    # avg_reward = total_reward / total_steps
-    # print()
-    # if episode > 1:
-    #     print(
-    #         f"Lifetime average reward across {episode + 1} episodes"
-    #         + f" of {step} steps each"
-    #     )
-    #     print(f"for {agent.name} on {world.name}: {avg_reward}")
-    # else:
-    #     print(
-    #         f"    Lifetime average reward for {agent.name}"
-    #         + f" on {world.name}: {avg_reward}"
-    #     )
 
     exitcode = 0
     if log_to_db:

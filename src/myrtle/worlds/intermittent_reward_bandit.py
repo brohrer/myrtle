@@ -3,12 +3,7 @@ from myrtle.worlds.base_world import BaseWorld
 
 
 class IntermittentRewardBandit(BaseWorld):
-    def __init__(
-        self,
-        n_loop_steps=1000,
-        n_episodes=1,
-        loop_steps_per_second = 100
-    ):
+    def __init__(self, n_loop_steps=1000, n_episodes=1, loop_steps_per_second=100):
         self.init_common(
             n_loop_steps=n_loop_steps,
             n_episodes=n_episodes,
@@ -32,27 +27,7 @@ class IntermittentRewardBandit(BaseWorld):
         # will be None
         self.intermittency = 0.1
 
-    def reset(self):
-        # This block will probably be needed in the reset() of every world.
-        ####
-        self.i_step = 0
-        if self.i_episode > 0:
-            # self.sensor_q.put({"truncated": True})
-            self.mq.put("control", "truncated")
-        ####
-
-        self.sensors = np.zeros(self.n_sensors)
-        self.actions = np.zeros(self.n_actions)
-        self.rewards = [0] * self.n_rewards
-
-    def step(self):
-        print(
-            f"step {self.i_step}, episode {self.i_episode}              ",
-            end="\r",
-        )
-        self.pm.beat()
-        self.read_action_q()
-
+    def sense(self):
         self.rewards = [0] * self.n_actions
         for i in range(self.n_actions):
             if np.random.sample() < self.bandit_hit_rates[i]:

@@ -44,6 +44,7 @@ class Pendulum(BaseWorld):
 
         self.name = "Pendulum"
 
+        self.reset()
         self.action_scale = 8 * np.array(
             [
                 -1.0,
@@ -62,13 +63,12 @@ class Pendulum(BaseWorld):
             ]
         )
         self.n_actions = self.action_scale.size
-
         self.n_rewards = 1
 
-        # vis_updates_per_second = 60
-        # self.sim_steps_per_vis_update = int(
-        #     self.sim_steps_per_second / vis_updates_per_second
-        # )
+        vis_updates_per_second = 60
+        self.world_steps_per_vis_update = int(
+            self.world_steps_per_second / vis_updates_per_second
+        )
         # self.reward_smoothing = 0.003
 
         self.mass = 1  # kilogram
@@ -77,7 +77,9 @@ class Pendulum(BaseWorld):
         self.gravity = -9.8  # meters / second^2
         self.friction = -0.30  # Newton-meters-seconds / radian
 
-        impulse_length = world_steps_per_second / loop_steps_per_second
+        self.dt = 1.0 / self.world_steps_per_second
+
+        impulse_length = int(world_steps_per_second / loop_steps_per_second)
         self.impulse = np.ones(impulse_length)
 
     def reset(self):
@@ -105,7 +107,6 @@ class Pendulum(BaseWorld):
         self.step_sensors()
 
     def step_world(self):
-        self.step_world_common()
         # Add any new actions to the torque buffer.
         torque_magnitude = np.sum(self.actions * self.action_scale)
         self.torque_buffer.add(torque_magnitude * self.impulse)
@@ -127,8 +128,9 @@ class Pendulum(BaseWorld):
         # Keep position in the range of [0, 2 pi)
         self.position = np.mod(self.position, 2 * np.pi)
 
-        if self.i_sim_step % self.sim_steps_per_vis_update == 0:
-            self.display()
+        if self.i_world_step % self.world_steps_per_vis_update == 0:
+            # self.display()
+            pass
             # if self.using_dash:
             #     current_reward = 1.0 - np.cos(self.position)
             #     self.dash_q.put((self.position, self.velocity, current_reward))

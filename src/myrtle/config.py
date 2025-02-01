@@ -21,30 +21,20 @@ The location of the windows for myrtle's dashboard constellation.
     * height of the window in pixels
 """
 # window_pixels = (x, y, width, height)
-window_pixels=(
+window_pixels = (
     WINDOWS_LEFT_PIXEL,
     WINDOWS_TOP_PIXEL,
     WINDOWS_WIDTH_PIXELS,
     WINDOWS_HEIGHT_PIXELS,
 )
 x, y, width, height = window_pixels
-bench_height = int(height * BENCH_HEIGHT_FRACTION) # - WINDOW_TITLE_HEIGHT
+bench_height = int(height * BENCH_HEIGHT_FRACTION)  # - WINDOW_TITLE_HEIGHT
 half_width = int(width / 2)
-bench_window = (
-    x,
-    y,
-    half_width,
-    bench_height
-)
+bench_window = (x, y, half_width, bench_height)
 world_window = (
     x,
     y + bench_height + WINDOW_TITLE_HEIGHT,
     half_width,
-    height - bench_height - WINDOW_TITLE_HEIGHT
+    height - bench_height - WINDOW_TITLE_HEIGHT,
 )
-agent_window = (
-    x + half_width,
-    y,
-    half_width,
-    height - WINDOW_TITLE_HEIGHT
-)
+agent_window = (x + half_width, y, half_width, height - WINDOW_TITLE_HEIGHT)

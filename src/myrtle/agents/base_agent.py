@@ -1,3 +1,7 @@
+"""
+Chooses a single random action at each step.
+"""
+
 import json
 import time
 import numpy as np
@@ -21,6 +25,7 @@ class BaseAgent:
             n_actions=n_actions,
             n_rewards=n_rewards,
         )
+
     def init_common(
         self,
         n_sensors=None,

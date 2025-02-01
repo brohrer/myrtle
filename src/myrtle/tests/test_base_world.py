@@ -1,7 +1,6 @@
 import json
 from multiprocessing import Process
 import pytest
-from threading import Thread
 import time
 import numpy as np
 from myrtle.worlds import base_world
@@ -76,7 +75,6 @@ def test_mq_initialization_and_close(
     initialize_world,
 ):
     # Also tests mq_initialization()
-    mq = setup_mq_client
     world = initialize_world
     assert not hasattr(world, "mq")
     world.initialize_mq()
@@ -140,7 +138,7 @@ def test_write_world_step(
     assert msg["episode"] == 111
     assert msg["sensors"][2] == -6.6
     assert msg["sensors"][4] == 56789
-    assert msg["rewards"][0] == None
+    assert msg["rewards"][0] is None
     assert msg["rewards"][1] == 0.01
 
 
@@ -149,7 +147,6 @@ def test_sensing(
     setup_mq_client,  # noqa: F811
     initialize_world,
 ):
-    mq = setup_mq_client
     world = initialize_world
 
     world.actions = np.array([0.0, 0.0, 0.0, 1.0, 0.0])
@@ -185,7 +182,7 @@ def test_run(
 
     assert world_info["loop_step"] == 4
     assert world_info["episode"] == 1
-    assert world_info["rewards"][1] == None
+    assert world_info["rewards"][1] is None
 
 
 def test_controlled_shutdown(
