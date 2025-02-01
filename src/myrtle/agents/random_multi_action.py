@@ -9,35 +9,24 @@ class RandomMultiAction(BaseAgent):
         n_actions=None,
         n_rewards=None,
         avg_actions=2.0,
-        sensor_q=None,
-        action_q=None,
-        log_name=None,
-        log_dir=".",
-        logging_level="info",
     ):
         self.name = "Random Multi-Action"
-        self.n_sensors = n_sensors
-        self.n_actions = n_actions
-        self.n_rewards = n_rewards
-        self.sensor_q = sensor_q
-        self.action_q = action_q
+        self.init_common(
+            n_sensors=n_sensors,
+            n_actions=n_actions,
+            n_rewards=n_rewards,
+        )
 
-        self.action_prob = avg_actions / self.n_actions
+        # Convert the average number of actions taken per step to a
+        # probability of each action being selected individually.
+        self.action_prob = (
+            avg_actions
+            /
+            # Handle the case where avg_actions >= n_actions
+            np.maximum(self.n_actions, avg_actions + 1)
+        )
 
-        self.initialize_log(log_name, log_dir, logging_level)
-
-        # This will get incremented to 0 by the reset.
-        self.i_episode = -1
-        self.reset()
-
-    def reset(self):
-        self.sensors = np.zeros(self.n_sensors)
-        self.rewards = [0] * self.n_rewards
-        self.actions = np.zeros(self.n_actions)
-        self.i_episode += 1
-        self.i_step = 0
-
-    def step(self):
+    def choose_action(self):
         # Pick whether to include each action independently
         self.actions = np.random.choice(
             [0, 1],

@@ -25,8 +25,8 @@ def run_demo():
             "discount_factor": 0.0,
             "learning_rate": 0.01,
         },
-        world_args={"n_time_steps": 20000},
-        record=False,
+        world_args={"n_loop_steps": 20000},
+        do_logging=False,
     )
 
     print(

@@ -12,18 +12,13 @@ class QLearningEpsilon(BaseAgent):
         epsilon=0.2,
         discount_factor=0.5,
         learning_rate=0.01,
-        sensor_q=None,
-        action_q=None,
-        log_name=None,
-        log_dir=".",
-        logging_level="info",
     ):
         self.name = "Epsilon-Greedy Q-Learning"
-        self.n_sensors = n_sensors
-        self.n_actions = n_actions
-        self.n_rewards = n_rewards
-        self.sensor_q = sensor_q
-        self.action_q = action_q
+        self.init_common(
+            n_sensors=n_sensors,
+            n_actions=n_actions,
+            n_rewards=n_rewards,
+        )
 
         # A parameter that affects how often the agent chooses to explore
         # random actions, rather than exploit (choose the best known action).
@@ -36,20 +31,14 @@ class QLearningEpsilon(BaseAgent):
         # but just in case a world slips in fractional actions add a threshold.
         self.action_threshold = action_threshold
 
-        self.initialize_log(log_name, log_dir, logging_level)
-
         # How often to report progress
         self.report_steps = 1000
-
-        # This will get incremented to 0 by the reset.
-        self.i_episode = -1
-        self.reset()
 
         # Store the value table as a dictionary.
         # Keys are sets of sensor readings.
         # Because we can't hash on Numpy arrays for the dict,
         # always use sensor_array.tobytes() as the key.
-        self.q_values = {self.previous_sensors.tobytes(): np.zeros(self.n_actions)}
+        self.q_values = {np.zeros(self.n_sensors).tobytes(): np.zeros(self.n_actions)}
 
     def reset(self):
         self.display()
@@ -59,10 +48,7 @@ class QLearningEpsilon(BaseAgent):
         self.rewards = [0] * self.n_rewards
         self.reward_history = [0] * self.report_steps
 
-        self.i_episode += 1
-        self.i_step = 0
-
-    def step(self):
+    def choose_action(self):
         # Update the running total of actions taken and how much reward they generate.
         reward = 0.0
         for reward_channel in self.rewards:
@@ -87,9 +73,7 @@ class QLearningEpsilon(BaseAgent):
                 1 - self.learning_rate
             ) * self.q_values[self.previous_sensors.tobytes()][
                 previous_action
-            ] + self.learning_rate * (
-                reward + self.discount_factor * max_value
-            )
+            ] + self.learning_rate * (reward + self.discount_factor * max_value)
         except IndexError:
             # Catch the case where there has been no action.
             # This is true for the first iteration.

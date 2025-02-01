@@ -2,9 +2,8 @@
 A [real-time](#real-time) reinforcement learning benchmark framework that allows for
 [multiple and intermittent rewards](#multiple-and-intermittent-rewards).
 
-Myrtle connects a real-time environment with an agent via a Queue and runs them.
+Myrtle connects a real-time environment with an agent via a message queue and runs them.
 
-- [Getting Started](#getting-started)
 - [Creating Worlds](#worlds)
 - [Creating Agents](#agents)
 
@@ -21,25 +20,34 @@ processes with `os.fork()`.
 ```bash
 python3 -m pip install myrtle
 ```
+or
+```bash
+uv add myrtle
+```
 
 ## Install for editing
 
 ```bash
 git clone https://codeberg.org/brohrer/myrtle.git
-```
-
-```bash
 python3 -m pip install pip --upgrade
 python3 -m pip install --editable myrtle
+```
+or
+```bash
+uv add git+https://codeberg.org/brohrer/myrtle.git
 ```
 
 ## Using Myrtle
 
-To run a demo
+To run a demo in Python
 
 ```python
 import myrtle.demo
 myrtle.demo.run_demo()
+```
+or at the command line
+```bash
+uv run src/myrtle/demo.py
 ```
 
 To run a RL agent against a world
@@ -64,6 +72,7 @@ bench.run(RandomSingleAction, StationaryBandit)
 src/
     myrtle/
         bench.py
+        demo.py
         agents/
             base_agent.py
             random_single_action.py
@@ -86,7 +95,19 @@ tests/
 
 The `run()` function in `bench.py` is the entry point.
 
-Run the test suite with `pytest`.
+Run the unit test suite with `pytest`. These typically run in less than
+60 seconds.
+
+```bash
+uv run pytest
+```
+
+Run the integration tests by using pytest on a file it doesn't usually
+gather from, `integration_test_suite.py`. This takes a few hours to
+run.
+```bash
+uv run pytest -s src/myrtle/tests/integration_test_suite.py
+```
 
 # Worlds
 
