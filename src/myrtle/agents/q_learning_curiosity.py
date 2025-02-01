@@ -129,22 +129,3 @@ class QLearningCuriosity(BaseAgent):
         # Make sure to make a copy here, so that previous_sensors and sensors don't
         # end up pointing at the same Numpy Array object.
         self.previous_sensors = self.sensors.copy()
-
-    """
-    def display(self):
-        try:
-            if self.i_step == 0:
-                return
-            n = np.minimum(self.i_step, self.report_steps)
-            avg_reward = np.sum(np.array(self.reward_history)) / n
-        except AttributeError:
-            return
-
-        print(
-            f"Average reward of {avg_reward} at time step {self.i_step:,},"
-            + f" episode {self.i_episode}"
-        )
-        n_lines = 4
-        for _ in range(n_lines):
-            print()
-    """

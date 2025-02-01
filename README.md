@@ -7,47 +7,41 @@ Myrtle connects a real-time environment with an agent via a message queue and ru
 - [Creating Worlds](#worlds)
 - [Creating Agents](#agents)
 
-#### Heads Up
-Myrtle runs on Linux only. It is not compatible
-with Windows or MacOS due to the fact that it starts new
-processes with `os.fork()`.
-[Forking behavior is detailed here.](https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods)
-
 # Getting started
 
 ## Install for off-the-shelf use
 
 ```bash
-python3 -m pip install myrtle
+uv add myrtle
 ```
 or
 ```bash
-uv add myrtle
+python3 -m pip install myrtle
 ```
 
 ## Install for editing
 
 ```bash
-git clone https://codeberg.org/brohrer/myrtle.git
-python3 -m pip install pip --upgrade
-python3 -m pip install --editable myrtle
+uv add git+https://codeberg.org/brohrer/myrtle.git
 ```
 or
 ```bash
-uv add git+https://codeberg.org/brohrer/myrtle.git
+git clone https://codeberg.org/brohrer/myrtle.git
+python3 -m pip install pip --upgrade
+python3 -m pip install --editable myrtle
 ```
 
 ## Using Myrtle
 
 To run a demo in Python
 
+```bash
+uv run src/myrtle/demo.py
+```
+or in a script
 ```python
 import myrtle.demo
 myrtle.demo.run_demo()
-```
-or at the command line
-```bash
-uv run src/myrtle/demo.py
 ```
 
 To run a RL agent against a world
@@ -85,12 +79,12 @@ src/
             intermittent_reward_bandit.py
             contextual_bandit.py
             ...
-tests/
-    README.md
-    test_base_agent.py
-    test_base_world.py
-    test_bench.py
-    ...
+        tests/
+            README.md
+            test_base_agent.py
+            test_base_world.py
+            test_bench.py
+            ...
 ```
 
 The `run()` function in `bench.py` is the entry point.
@@ -111,7 +105,8 @@ uv run pytest -s src/myrtle/tests/integration_test_suite.py
 
 # Worlds
 
-To be compatible with the Myrtle benchmark framework, world classes have to have a few
+To be compatible with the Myrtle benchmark framework,
+world classes have to have a few
 characteristics. There is a skeleton implementation in
 [`base_world.py`](base_world.py)
 to use as a starting place. 
@@ -138,33 +133,6 @@ it allows for individual rewards to be missing on any given time step.
 See page 10 of [this paper](https://brandonrohrer.com/cartographer) for
 a bit more context
 
-## Initialization
-
-A World class should be initializable with a three keyword arguments, 
-[multiprocessing Queues](
-https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue),
-`sensor_q`, `action_q`, and `report_q`.
-
-`sensor_q` is the Queue for passing messages from the world to the agent.
-It provides sensor and reward information, as well as information about whether
-a the current episode has terminated, or the world has ceased to exist altogether.
-[More detail here.](#sensor_q-messages)
-
-`action_q` is the Queue for passing messages from the agent to world.
-It informs the world of the actions the agent has chosen to take.
-[More detail here.](#action_q-messages)
-
-`report_q` is the Queue for passing messages from the world bach to the bench process.
-It helps track reward at each time step.
-[More detail here.](#report_q-messages)
-
-## Methods
-
-Every World contains a `run()` method. This is what the bench process calls
-when it forks off the world process.
-It will determine how long the World runs, how many many times it starts over at
-the beginning (episodes), and everything else about what is run during benchmarking:
-
 ## Real-time
 
 A good world for benchmarking with Myrtle will be tied to a wall clock
@@ -173,16 +141,8 @@ But this is expensive and time consuming, so more often it is a simulation
 of some sort. A good way to tie this to the wall clock is with a
 pacemaker that advances the simluation step by step at a fixed cadence.
 There exists such a thing in the
-[`pacemaker` package](https://github.com/brohrer/pacemaker)
-(`pip install pacemaker-lite`).
-
-The sample worlds in this package all have the import line
-
-```python
-from pacemaker.pacemaker import Pacemaker
-```
-
-and use the `Pacemaker.beat()` method to keep time. 
+[`pacemaker` package](https://github.com/brohrer/pacemaker), which
+is built into the `BaseWorld`.
 
 ## `BaseWorld`
 
@@ -198,8 +158,8 @@ class MyWorld(BaseWorld):
 
 It takes care of the interface with the rest of the benchmarking platform,
 including process management, communication, and logging.
-To make it your own, override the `__init__()`, `reset()`, and `step()`
-methods.
+To make it your own, override the `__init__()`, `reset()`, `step_world()`
+and `sense()` methods.
 
 ## Stock Worlds
 
@@ -241,16 +201,11 @@ these can be implemented, check out
 [`base_agent.py`](https://codeberg.org/brohrer/myrtle/src/branch/main/src/myrtle/agents/base_agent.py).
 
 ## Initialization
-An Agent initializes with at least these named arguments, the same as 
-described above for Worlds.
+An Agent initializes with at least these named arguments,
 
 - `n_sensors`: `int`
 - `n_actions`: `int`
 - `n_rewards (optional)`: `int`
-- `sensor_q`: [`multiprocessing.Queue`](
-    https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue)
-- `action_q`: [`multiprocessing.Queue`](
-    https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue)
 
 ## Other attributes
 The only other attribute an Agent is expected to have is a name.
@@ -279,8 +234,8 @@ class MyAgent(BaseAgent):
 
 It takes care of the interface with the rest of the benchmarking platform,
 including process management, communication, and logging.
-To make it your own, override the `__init__()`, `reset()`, and `step()`
-methods.
+To make it your own, override the `__init__()`, `reset()`,
+and `choose_action()` methods.
 
 ## Agents included
 
@@ -318,44 +273,51 @@ Q-Learning, but with some home-rolled curiosity-driven exploration.
 
 ## Messaging
 
-Communication between the Agent and the World is conducted through the Queues.
-Through the `sensor_q` the World passes sensor and reward information to the
-Agent.  Through the `action_q` the Agent passes action commands back to the World.
+Communication between the Agent and the World is conducted through
+a message queue, specifically [dsmq](https://www.brandonrohrer.com/dsmq).
+A dsmq server is set up by `bench.py` and both `base_world.py` and
+`base_agent.py` set up client connections. Through these connections they
+pass sensor, action, and reward information. A client adds a message to
+a topic in the dsmq with a line like
+```python
+mq_connection.put(topic, message)
+```
+where both `topic` and `message` are strings. Myrtle makes frequent use of
+`json.dumps()` and `json.loads()` to convert dictionaries to strings
+and send them as messages. It can retreive the oldest unread message
+in a topic with
+```python
+mq_connection.get(topic)
+```
 
-The World also reports reward back to the parent bench process through a
-`report_q` Queue.
+The current version of myrtle makes use of three topics (but arbitrarily
+many more can be used if necessary), `"agent_step"`, `"world_step"`,
+and `"command"`.
 
-### `sensor_q` messages
+In `world_step` messages are stringified dicts containing four key-value pairs.
+- `"loop_step"`, the current time step for the sense-act-reward loop.
+This is distinct from `world_step`, used for counting
+internal simulation time steps.
+- `"episode"`, how many episodes have completed already.
+- `"sensors"`, the current set of sensor values.
+- `"rewards"`, the current set of reward values.
 
-Roughly following the conventions of [OpenAI Gym](https://github.com/openai/gym),
-messages through the `sensor_q` are dicts with one or more of the following 
-key-value pairs.
+In `agent_step` messages are stringified dicts containing
+- `"episode"`, should match that of the world.
+- `"step"`, should match the loop step of the world.
+- `"timestamp"`, the wall clock time the message was sent.
+- `"actions"`, the current set of actions commanded.
 
-- "`sensors`": `numpy.Array`, the values of all sensors.
-- "`rewards`": `List`, the values of each reward. Some or all of them may be `None`.
-- "`truncated`": `bool`, flag that the current episode has ended and another is being kicked off.
-- "`terminated`": `bool`, flag that all episodes have ended, and no more `sensor_q`
-messages will be sent.
-
-### `action_q` messages
-
-Messages through the `action_q` are dicts with a single key-value pair.
-
-- "`actions`": `numpy.Array`, the values of all commanded actions.
-
-### `report_q` messages
-Messages through the `report_q` are dicts with a four key-value pairs.
-
-- "`episode`": `int`, the count of the current episode.
-- "`step`": `int`, the count of the current time step. Resets with each episode.
-- "`rewards`": `List`, as described for the `sensor_q` above.
-- "`terminated`": `bool`, flag that all episodes have ended, and no more `report_q`
-messages will be sent.
+There is also a program `"control"` topic, for signaling the end of an
+episode or that it is time to shut down the run.
+Following the conventions of [OpenAI Gym](https://github.com/openai/gym),
+there are `"truncated"` and `"terminated"`.
 
 ## Multiprocess coordination
 
 One bit of weirdness about having the World and Agent running in separate
-processes is how to handle flow control. The World will be tied to the wall clock,
+processes is how to handle flow control. The way myrtle handles this is that
+the World is always to the wall clock,
 advancing on a fixed cadence. It will keep providing sensor and reward
 information without regard for whether the Agent is ready for it.
 It will keep trying to do the next thing, regardless of whether the Agent
@@ -370,7 +332,7 @@ one, zero, or multiple action commands from the Agent.
 
 ## Saving and reporting results
 
-If the bench is run with argument `record=True` (the default) then,
+If the bench is run with argument `log_to_db=True` (the default) then,
 the total reward for every time step reported by the World is written
 to a [SQLite database](https://docs.python.org/3/library/sqlite3.html),
 stored locally in a database file called `bench.db`.

@@ -1,6 +1,6 @@
 from myrtle import bench
-from myrtle.agents.q_learning_curiosity import QLearningCuriosity  # noqa: F401
-from myrtle.worlds.contextual_bandit import ContextualBandit  # noqa: F401
+from myrtle.agents.q_learning_curiosity import QLearningCuriosity
+from myrtle.worlds.contextual_bandit import ContextualBandit
 
 
 def run_demo():
@@ -10,7 +10,8 @@ def run_demo():
     learning a contextual bandit--a multi-armed bandit where sensor values
     indicate which one has the highest payout.
 
-    This demo runs for 20,000 steps, about 20 seconds.
+    This demo runs for 20,000 steps,
+    at 100 steps per second--a little over 3 minutes.
     That's just enough time for it
     to settle in to good (close to optimal) behavior.
 
@@ -25,8 +26,11 @@ def run_demo():
             "discount_factor": 0.0,
             "learning_rate": 0.01,
         },
-        world_args={"n_loop_steps": 20000},
-        do_logging=False,
+        world_args={
+            "n_loop_steps": 20000,
+            "loop_steps_per_second": 100,
+        },
+        log_to_db=False,
     )
 
     print(
