@@ -1,6 +1,6 @@
 from myrtle import bench
-from myrtle.agents.q_learning_curiosity import QLearningCuriosity  # noqa: F401
-from myrtle.worlds.pendulum_discrete import PendulumDiscrete  # noqa: F401
+from myrtle.agents.q_learning_curiosity import QLearningCuriosity
+from myrtle.worlds.pendulum_discrete import PendulumDiscrete
 
 
 def run_demo():

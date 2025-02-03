@@ -2,10 +2,10 @@ import dsmq.client
 import dsmq.server
 import json
 import multiprocessing as mp
+import os
 import sqlite3
 from threading import Thread
 import time
-# mp.set_start_method("fork")
 
 from myrtle import config
 from myrtle.agents import base_agent
@@ -44,6 +44,13 @@ def run(
     collected.
     """
     control_pacemaker = Pacemaker(_health_check_frequency)
+
+    # If a prior run crashed, it can leave a file that slows down
+    # dsmq by encouraging to read/write to disk.
+    try:
+        os.remove("file::memory:\\?cache=shared")
+    except FileNotFoundError:
+        pass
 
     # Kick off the message queue process
     p_mq_server = mp.Process(

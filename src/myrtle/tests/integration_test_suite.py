@@ -27,13 +27,13 @@ from myrtle.worlds.pendulum_discrete import PendulumDiscrete
 from myrtle.worlds.pendulum import Pendulum
 
 _test_db_name = f"temp_integration_test_{int(time.time())}"
-_timeout = 10.0 * 60  # in seconds
+_default_timeout = 10.0 * 60  # in seconds
 
 
 def main():
     # Specify which scenarios to run
     # test_base_world_base_agent()
-    test_base_world_random_multi_action_agent()
+    # test_base_world_random_multi_action_agent()
     # test_base_world_greedy_state_blind_agent()
     # test_base_world_greedy_state_blind_eps_agent()
     # test_base_world_value_avg_curiosity_agent()
@@ -45,7 +45,7 @@ def main():
     # test_contextual_bandit_world_q_learning_curiosity_agent()
     # test_one_hot_contextual_bandit_world_q_learning_curiosity_agent()
     # test_pendulum_discrete_world_q_learning_curiosity_agent()
-    # test_pendulum_world_q_learning_curiosity_agent()
+    test_pendulum_world_q_learning_curiosity_agent()
 
 
 def db_cleanup():
@@ -63,17 +63,18 @@ def run_world_with_agent(
     agent_args={},
     reward_lower_bound=-0.3,
     reward_upper_bound=0.3,
-    timeout=600,
+    timeout=_default_timeout,
 ):
     """
     For a given agent class, run it against a BaseWorld
     """
+    start_time = time.time()
     exitcode = bench.run(
         agent_class,
         world_class,
         log_to_db=True,
         logging_db_name=_test_db_name,
-        timeout=_timeout,
+        timeout=timeout,
         world_args={
             "n_loop_steps": n_loop_steps,
             "n_episodes": n_episodes,
@@ -96,7 +97,10 @@ def run_world_with_agent(
         ORDER BY episode DESC
     """
     )
+    print()
+    print(f"Ran in {int(time.time() - start_time)} seconds")
     print(f"Average reward: {result[1][0]}")
+    print()
     assert result[1][0] > reward_lower_bound
     assert result[1][0] < reward_upper_bound
 
@@ -138,6 +142,7 @@ def test_stationary_bandit_world_q_learning_curiosity_agent():
         n_loop_steps=int(1e4),
         reward_lower_bound=10.0,
         reward_upper_bound=100.0,
+        timeout=60 * 30,
     )
 
 

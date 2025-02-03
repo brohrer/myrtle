@@ -50,12 +50,10 @@ class QLearningCuriosity(BaseAgent):
         }
 
     def reset(self):
-        # self.display()
         self.sensors = np.zeros(self.n_sensors)
         self.previous_sensors = np.zeros(self.n_sensors)
         self.actions = np.zeros(self.n_actions)
         self.rewards = [0] * self.n_rewards
-        self.reward_history = [0] * self.report_steps
 
     def choose_action(self):
         # Update the running total of actions taken and how much reward they generate.
@@ -63,9 +61,6 @@ class QLearningCuriosity(BaseAgent):
         for reward_channel in self.rewards:
             if reward_channel is not None:
                 reward += reward_channel
-
-        self.reward_history.append(reward)
-        self.reward_history.pop(0)
 
         if self.sensors.tobytes() not in self.q_values:
             self.q_values[self.sensors.tobytes()] = np.zeros(self.n_actions)
@@ -121,10 +116,6 @@ class QLearningCuriosity(BaseAgent):
         # Reset the curiosity counter on the selected state-action pair.
         self.curiosities[self.sensors.tobytes()][i_action] = 0
         self.counts[self.sensors.tobytes()][i_action] += 1
-
-        if self.i_step % self.report_steps == 0:
-            # self.display()
-            pass
 
         # Make sure to make a copy here, so that previous_sensors and sensors don't
         # end up pointing at the same Numpy Array object.

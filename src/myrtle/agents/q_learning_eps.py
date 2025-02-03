@@ -31,9 +31,6 @@ class QLearningEpsilon(BaseAgent):
         # but just in case a world slips in fractional actions add a threshold.
         self.action_threshold = action_threshold
 
-        # How often to report progress
-        self.report_steps = 1000
-
         # Store the value table as a dictionary.
         # Keys are sets of sensor readings.
         # Because we can't hash on Numpy arrays for the dict,
@@ -41,12 +38,10 @@ class QLearningEpsilon(BaseAgent):
         self.q_values = {np.zeros(self.n_sensors).tobytes(): np.zeros(self.n_actions)}
 
     def reset(self):
-        self.display()
         self.sensors = np.zeros(self.n_sensors)
         self.previous_sensors = np.zeros(self.n_sensors)
         self.actions = np.zeros(self.n_actions)
         self.rewards = [0] * self.n_rewards
-        self.reward_history = [0] * self.report_steps
 
     def choose_action(self):
         # Update the running total of actions taken and how much reward they generate.
@@ -54,9 +49,6 @@ class QLearningEpsilon(BaseAgent):
         for reward_channel in self.rewards:
             if reward_channel is not None:
                 reward += reward_channel
-
-        self.reward_history.append(reward)
-        self.reward_history.pop(0)
 
         if self.sensors.tobytes() not in self.q_values:
             self.q_values[self.sensors.tobytes()] = np.zeros(self.n_actions)
@@ -95,26 +87,6 @@ class QLearningEpsilon(BaseAgent):
         self.actions = np.zeros(self.n_actions)
         self.actions[i_action] = 1
 
-        if self.i_step % self.report_steps == 0:
-            self.display()
-
         # Make sure to make a copy here, so that previous_sensors and sensors don't
         # end up pointing at the same Numpy Array object.
         self.previous_sensors = self.sensors.copy()
-
-    def display(self):
-        try:
-            if self.i_step == 0:
-                return
-            n = np.minimum(self.i_step, self.report_steps)
-            avg_reward = np.sum(np.array(self.reward_history)) / n
-        except AttributeError:
-            return
-
-        print(
-            f"Average reward of {avg_reward} at time step {self.i_step:,},"
-            + f" episode {self.i_episode}"
-        )
-        n_lines = 4
-        for _ in range(n_lines):
-            print()
