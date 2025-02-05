@@ -1,0 +1,6 @@
+log_directory = "myrtle_logs"
+
+# mq_host = "192.168.1.10"  # loki
+mq_host = "192.168.1.20"  # aidas
+mq_port = 38388  # An arbitrary port
+

@@ -6,12 +6,13 @@ import os
 import sqlite3
 from threading import Thread
 import time
+import tomllib
 
-from myrtle import config
 from myrtle.agents import base_agent
 from myrtle.worlds import base_world
 from pacemaker.pacemaker import Pacemaker
 from sqlogging import logging
+
 
 _db_name_default = "bench"
 _logging_frequency = 100  # Hz
@@ -19,6 +20,9 @@ _health_check_frequency = 10.0  # Hz
 _mq_server_setup_delay = 1.0  # seconds
 _shutdown_delay = 4.0  # seconds
 _kill_delay = 0.01  # seconds
+
+with open("config.toml", "rb") as f:
+    _config = tomllib.load(f)
 
 
 def run(
@@ -55,7 +59,7 @@ def run(
     # Kick off the message queue process
     p_mq_server = mp.Process(
         target=dsmq.server.serve,
-        args=(config.MQ_HOST, config.MQ_PORT),
+        args=(_config["mq_host"], _config["mq_port"]),
     )
     p_mq_server.start()
     time.sleep(_mq_server_setup_delay)
@@ -88,7 +92,7 @@ def run(
 
     # Keep the workbench alive until it's time to close it down.
     # Monitor a "control" topic for a signal to stop everything.
-    mq_client = dsmq.client.connect(config.MQ_HOST, config.MQ_PORT)
+    mq_client = dsmq.client.connect(_config["mq_host"], _config["mq_port"])
     run_start_time = time.time()
     while True:
         control_pacemaker.beat()
@@ -161,14 +165,14 @@ def _reward_logging(dbname, agent, world):
     try:
         logger = logging.open_logger(
             name=dbname,
-            dir_name=config.LOG_DIRECTORY,
+            dir_name=_config["log_directory"],
             level="info",
         )
     except (sqlite3.OperationalError, RuntimeError):
         # If necessary, create a new logger.
         logger = logging.create_logger(
             name=dbname,
-            dir_name=config.LOG_DIRECTORY,
+            dir_name=_config["log_directory"],
             columns=[
                 "reward",
                 "step",
@@ -182,7 +186,7 @@ def _reward_logging(dbname, agent, world):
     run_timestamp = time.time()
     logging_pacemaker = Pacemaker(_logging_frequency)
 
-    logging_mq_client = dsmq.client.connect(config.MQ_HOST, config.MQ_PORT)
+    logging_mq_client = dsmq.client.connect(_config["mq_host"], _config["mq_port"])
     while True:
         logging_pacemaker.beat()
 

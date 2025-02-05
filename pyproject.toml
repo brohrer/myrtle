@@ -1,6 +1,6 @@
 [project]
 name = "myrtle"
-version = "0.6.0"
+version = "0.7.0"
 authors = [
   { name="Brandon Rohrer", email="brohrer@gmail.com" },
 ]
@@ -37,9 +37,17 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 Repository = "https://codeberg.org/brohrer/myrtle.git"
 
-[tool.uv]
-dev-dependencies = [
-    "pytest>=8.3.4",
+[tool.hatch.build.targets.sdist]
+sources = ["/", "src/myrtle"]
+include = [
+  "*.md",
+  "config.toml",
+  "monitors/*.html",
+  "monitors/*.js",
+]
+exclude = [
+  "*.dep",
+  "archive"
 ]
 
 [tool.ruff]
@@ -94,3 +102,8 @@ indent-style = "space"
 
 # Like Black, respect magic trailing commas.
 skip-magic-trailing-comma = false
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.3.4",
+]

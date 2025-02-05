@@ -1,14 +1,17 @@
 import multiprocessing as mp
 import pytest
+import tomllib
 import dsmq.server
-from myrtle import config
+
+with open("config.toml", "rb") as f:
+    _config = tomllib.load(f)
 
 
 @pytest.fixture
 def setup_mq_server():
     # Kick off the dsmq server in a separate process
     p_mq_server = mp.Process(
-        target=dsmq.server.serve, args=(config.MQ_HOST, config.MQ_PORT)
+        target=dsmq.server.serve, args=(_config["mq_host"], _config["mq_port"])
     )
     p_mq_server.start()
 
@@ -16,7 +19,7 @@ def setup_mq_server():
     # It's convoluted, but the way to cleanly shut down a dsmq server
     # running in a different process is through a command issued
     # from a client.
-    mq_client = dsmq.client.connect(config.MQ_HOST, config.MQ_PORT)
+    mq_client = dsmq.client.connect(_config["mq_host"], _config["mq_port"])
 
     yield
 
@@ -26,7 +29,7 @@ def setup_mq_server():
 
 @pytest.fixture
 def setup_mq_client():
-    mq_client = dsmq.client.connect(config.MQ_HOST, config.MQ_PORT)
+    mq_client = dsmq.client.connect(_config["mq_host"], _config["mq_port"])
 
     yield mq_client
 

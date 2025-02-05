@@ -1,23 +1,24 @@
 from multiprocessing import Process
 import os
 import time
+import tomllib
 import dsmq.client
 from sqlogging import logging
 from myrtle import bench
-from myrtle import config
 from myrtle.agents import base_agent
 from myrtle.worlds import base_world
 
 _bench_run_timeout = 5.0  # seconds
+_pause = 4.0
 _test_db_name = f"temp_bench_test_{int(time.time())}"
 
-_long_pause = 4.0
-_pause = 1.0
+with open("config.toml", "rb") as f:
+    _config = tomllib.load(f)
 
 
 def db_cleanup():
     db_filename = f"{_test_db_name}.db"
-    db_path = os.path.join(config.LOG_DIRECTORY, db_filename)
+    db_path = os.path.join(_config["log_directory"], db_filename)
     os.remove(db_path)
 
 
@@ -86,7 +87,7 @@ def test_result_logging():
 
     logger = logging.open_logger(
         name=_test_db_name,
-        dir_name=config.LOG_DIRECTORY,
+        dir_name=_config["log_directory"],
         level="info",
     )
     result = logger.query(
@@ -143,7 +144,7 @@ def test_multiple_runs():
 
     logger = logging.open_logger(
         name=_test_db_name,
-        dir_name=config.LOG_DIRECTORY,
+        dir_name=_config["log_directory"],
         level="info",
     )
     result = logger.query(
@@ -176,13 +177,13 @@ def test_controlled_shutdown():
     p_bench_run.start()
 
     # Give the workbench time to get spun up.
-    time.sleep(_long_pause)
+    time.sleep(_pause)
 
-    mq = dsmq.client.connect(config.MQ_HOST, config.MQ_PORT)
+    mq = dsmq.client.connect(_config["mq_host"], _config["mq_port"])
     mq.put("control", "terminated")
     mq.close()
 
-    p_bench_run.join(_long_pause)
+    p_bench_run.join(_pause)
 
     assert not p_bench_run.is_alive()
 
