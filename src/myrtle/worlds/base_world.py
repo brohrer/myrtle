@@ -1,13 +1,16 @@
 import json
+import tomllib
 import numpy as np
 import dsmq.client
-from myrtle import config
 from pacemaker.pacemaker import Pacemaker
 
 _default_n_loop_steps = 101
 _default_n_episodes = 3
 _default_loop_steps_per_second = 5.0
 _default_speedup = 1.0
+
+with open("config.toml", "rb") as f:
+    _config = tomllib.load(f)
 
 
 class BaseWorld:
@@ -73,6 +76,19 @@ class BaseWorld:
         self.n_loop_steps = n_loop_steps
         self.n_episodes = n_episodes
 
+
+        # `i_loop_step` counts the number of world->agent->world loop iterations,
+        # time steps for the RL algo.
+        self.i_loop_step = 0
+
+        # `i_world_step` counts the number of time steps internal to the world.
+        # These can be much finer, as in the case of a physics simulation or
+        # rapidly sampled sensors whose readings are aggregrated before passing
+        # them on to the world.
+        self.i_world_step = 0
+
+        self.i_episode = 0
+
         # Default to one world step per loop step
         if world_steps_per_second is None:
             world_steps_per_second = loop_steps_per_second
@@ -101,7 +117,7 @@ class BaseWorld:
     def initialize_mq(self):
         if not self.mq_initialized:
             # Initialize message queue socket.
-            self.mq = dsmq.client.connect(config.MQ_HOST, config.MQ_PORT)
+            self.mq = dsmq.client.connect(_config["mq_host"], _config["mq_port"])
             self.mq_initialized = True
 
     def run(self):
@@ -118,15 +134,6 @@ class BaseWorld:
         self.initialize_mq()
         for i_episode in range(self.n_episodes):
             self.i_episode = i_episode
-
-            # `i_loop_step` counts the number of world->agent->world loop iterations,
-            # time steps for the RL algo.
-            # `i_world_step` counts the number of time steps internal to the world.
-            # These can be much finer, as in the case of a physics simulation or
-            # rapidly sampled sensors whose readings are aggregrated before passing
-            # them on to the world.
-            # self.i_loop_step = -1
-            # self.i_world_step = -1
 
             self.reset()
 

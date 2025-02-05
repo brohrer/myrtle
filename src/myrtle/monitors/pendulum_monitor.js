@@ -1,19 +1,28 @@
+const fs = require('fs');
+const toml = require('toml');
+
+const config = toml.parse(fs.readFileSync('../../../config.toml', 'utf-8'));
+
+const addr = `ws://${config.host}:${config.port}`;
 // const socket = new WebSocket("ws://127.0.0.1:30008");
 // const socket = new WebSocket("ws://192.168.1.20:30957");
-const socket = new WebSocket("ws://192.168.1.20:38388");
+//const socket = new WebSocket("ws://192.168.1.20:38388");
+const socket = new WebSocket(addr);
 
 // get canvas and context
 var canvas = document.getElementById('the-canvas'),
 ctx = canvas.getContext('2d');
+
 // some kind of state for the animation
-var x_center = canvas.width / 2,
+const x_center = canvas.width / 2,
 y_center = canvas.width / 2,
 dy_text = 0.07 * canvas.width,
-msg = '',
+radius = canvas.width / 4;
+
+var msg = '',
 reward = 0.0,
 angle = 0.0,
 velocity = 0.0,
-radius = canvas.width / 4,
 step = 0,
 episode = 0;
 
