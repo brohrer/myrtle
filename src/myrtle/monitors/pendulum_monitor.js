@@ -1,12 +1,21 @@
-const fs = require('fs');
-const toml = require('toml');
+function GetURLParameter(sParam)
+{
+    var sPageURL = window.location.search.substring(1);
+    var sURLVariables = sPageURL.split('&');
+    for (var i = 0; i < sURLVariables.length; i++)
+    {
+        var sParameterName = sURLVariables[i].split('=');
+        if (sParameterName[0] == sParam)
+        {
+            return sParameterName[1];
+        }
+    }
+}
 
-const config = toml.parse(fs.readFileSync('../../../config.toml', 'utf-8'));
+var host = GetURLParameter('host');
+var port = GetURLParameter('port');
 
-const addr = `ws://${config.host}:${config.port}`;
-// const socket = new WebSocket("ws://127.0.0.1:30008");
-// const socket = new WebSocket("ws://192.168.1.20:30957");
-//const socket = new WebSocket("ws://192.168.1.20:38388");
+const addr = `ws://${host}:${port}`;
 const socket = new WebSocket(addr);
 
 // get canvas and context
