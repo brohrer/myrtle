@@ -90,6 +90,15 @@ def run(
     p_agent.start()
     p_world.start()
 
+    print()
+    print("Follow this run at")
+    print(
+        "myrtle/src/myrtle/bench_monitor.html?" +
+        f"host={_config['mq_host']}&" +
+        f"port={_config['mq_port']}"
+    )
+    print()
+
     # Keep the workbench alive until it's time to close it down.
     # Monitor a "control" topic for a signal to stop everything.
     mq_client = dsmq.client.connect(_config["mq_host"], _config["mq_port"])

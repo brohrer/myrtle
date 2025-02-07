@@ -1,6 +1,10 @@
+import tomllib
 import numpy as np
 from myrtle.worlds.base_world import BaseWorld
 from myrtle.worlds.tools.ring_buffer import RingBuffer
+
+with open("config.toml", "rb") as f:
+    _config = tomllib.load(f)
 
 
 class Pendulum(BaseWorld):
@@ -43,6 +47,15 @@ class Pendulum(BaseWorld):
         )
 
         self.name = "Pendulum"
+
+        print()
+        print("Monitor the pendulum at")
+        print(
+            "myrtle/src/myrtle/pendulum_monitor.html?" +
+            f"host={_config['mq_host']}&" +
+            f"port={_config['mq_port']}"
+        )
+        print()
 
         self.reset()
         self.action_scale = 8 * np.array(
