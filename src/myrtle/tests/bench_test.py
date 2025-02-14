@@ -1,4 +1,5 @@
 from multiprocessing import Process
+from threading import Thread
 import os
 import time
 import tomllib
@@ -6,20 +7,33 @@ import dsmq.client
 from sqlogging import logging
 from myrtle import bench
 from myrtle.agents import base_agent
+from myrtle.config import log_directory, mq_host, mq_port
 from myrtle.worlds import base_world
 
 _bench_run_timeout = 5.0  # seconds
-_pause = 4.0
+_startup_delay = 5.0  # seconds
 _test_db_name = f"temp_bench_test_{int(time.time())}"
-
-with open("config.toml", "rb") as f:
-    _config = tomllib.load(f)
 
 
 def db_cleanup():
     db_filename = f"{_test_db_name}.db"
-    db_path = os.path.join(_config["log_directory"], db_filename)
+    db_path = os.path.join(log_directory, db_filename)
     os.remove(db_path)
+
+
+def test_run_a():
+    exitcode = bench.run(
+        base_agent.BaseAgent,
+        base_world.BaseWorld,
+        log_to_db=False,
+        timeout=_bench_run_timeout,
+        world_args={
+            "n_loop_steps": 5,
+            "n_episodes": 2,
+            "loop_steps_per_second": 20,
+        },
+    )
+    assert exitcode == 0
 
 
 def test_run():
@@ -87,7 +101,7 @@ def test_result_logging():
 
     logger = logging.open_logger(
         name=_test_db_name,
-        dir_name=_config["log_directory"],
+        dir_name=log_directory,
         level="info",
     )
     result = logger.query(
@@ -144,7 +158,7 @@ def test_multiple_runs():
 
     logger = logging.open_logger(
         name=_test_db_name,
-        dir_name=_config["log_directory"],
+        dir_name=log_directory,
         level="info",
     )
     result = logger.query(
@@ -172,19 +186,23 @@ def test_controlled_shutdown():
             "n_episodes": 2,
             "loop_steps_per_second": 20,
         },
+        "verbose": True,
     }
     p_bench_run = Process(target=bench.run, args=run_args, kwargs=run_kwargs)
     p_bench_run.start()
+    time.sleep(_startup_delay)
 
-    # Give the workbench time to get spun up.
-    time.sleep(_pause)
-
-    mq = dsmq.client.connect(_config["mq_host"], _config["mq_port"])
+    mq = dsmq.client.connect(mq_host, mq_port)
     mq.put("control", "terminated")
     mq.close()
 
-    p_bench_run.join(_pause)
+    p_bench_run.join(_bench_run_timeout)
 
     assert not p_bench_run.is_alive()
+    assert p_bench_run.exitcode == 0
 
     db_cleanup()
+
+
+if __name__ == "__main__":
+    test_controlled_shutdown()

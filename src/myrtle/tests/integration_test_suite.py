@@ -7,6 +7,7 @@ import time
 from sqlogging import logging
 import tomllib
 from myrtle import bench
+from myrtle.config import log_directory
 
 from myrtle.agents.base_agent import BaseAgent
 from myrtle.agents.random_multi_action import RandomMultiAction
@@ -27,9 +28,6 @@ from myrtle.worlds.pendulum import Pendulum
 
 _test_db_name = f"temp_integration_test_{int(time.time())}"
 _default_timeout = 10.0 * 60  # in seconds
-
-with open("config.toml", "rb") as f:
-    _config = tomllib.load(f)
 
 
 def main():
@@ -52,7 +50,7 @@ def main():
 
 def db_cleanup():
     db_filename = f"{_test_db_name}.db"
-    db_path = os.path.join(_config["log_directory"], db_filename)
+    db_path = os.path.join(log_directory, db_filename)
     os.remove(db_path)
 
 
@@ -88,7 +86,7 @@ def run_world_with_agent(
 
     logger = logging.open_logger(
         name=_test_db_name,
-        dir_name=_config["log_directory"],
+        dir_name=log_directory,
         level="info",
     )
     result = logger.query(

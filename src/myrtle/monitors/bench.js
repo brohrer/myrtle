@@ -1,7 +1,7 @@
-let host = getURLParameter('host');
-let port = getURLParameter('port');
+import { arrayMin, arrayMax } from './num.js';
+import { mq_host, mq_port } from './config.js';
 
-const addr = `ws://${host}:${port}`;
+const addr = `ws://${mq_host}:${mq_port}`;
 const socket = new WebSocket(addr);
 
 // get canvas and context
@@ -10,12 +10,13 @@ ctx = canvas.getContext('2d');
 
 // parameters for the display
 const leftBorder = canvas.width / 8
-const rightBorder = canvas.width * 7 / 8
+const rightBorder = canvas.width * 6 / 8
 const topBorder = canvas.width / 8
 const bottomBorder = canvas.width * 5 / 8
 
 let msg = '';
 let reward = 0.0;
+let values = 0;
 let step = 0;
 let episode = 0;
 
@@ -24,14 +25,9 @@ var rewardHistory = new Array(historyLength).fill(0);
 let x = new Array(historyLength).fill(0);
 let y = new Array(historyLength).fill(0);
 
-//socket.onopen = () => {
-//  console.log('ws opened on browser');
-//  socket.send('hello world');
-//};
-
 socket.onmessage = (event) => {
   console.log(event.data);
-  obj = JSON.parse(event.data);
+  let obj = JSON.parse(event.data);
   if (obj.message !== ""){
     msg = obj.message;
     values = JSON.parse(msg);
@@ -42,7 +38,6 @@ socket.onmessage = (event) => {
     rewardHistory.push(reward);
     rewardHistory.shift();
   };
-  event.data = reward;
 };
 
 // Main APP loop
@@ -67,14 +62,14 @@ function loop()
   ctx.moveTo(x[0], y[0]);
   for (let i = 1; i < y.length; i++) {
     ctx.lineTo(x[i], y[i]);
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 3;
     ctx.strokeStyle = "CadetBlue";
   }
   ctx.stroke();
 
-  let y_text = canvas.width * 0.94,
-  x_text = canvas.width / 4;;
-  ctx.font = "18px Courier New";
+  let y_text = canvas.height * 0.8,
+  x_text = canvas.width / 4;
+  ctx.font = "24px Courier New";
   ctx.fillText(`reward     ${reward.toFixed(3)}`, x_text, y_text);
 
   //request next frame
@@ -100,29 +95,7 @@ function calculateY()
     y[i] = bottomBorder + reward_norm * (topBorder - bottomBorder) 
   }
 }
-
-function arrayMin(arr)
-{
-  let min_val = 1e20;
-  for (let i = 0; i < arr.length; i++) {
-    if (arr[i] < min_val){
-      min_val = arr[i];
-    }
-  }
-  return min_val
-}
-
-function arrayMax(arr)
-{
-  let max_val = -1e20;
-  for (let i = 0; i < arr.length; i++) {
-    if (arr[i] > max_val){
-      max_val = arr[i];
-    }
-  }
-  return max_val
-}
-
+/*
 function getURLParameter(sParam)
 {
   let sPageURL = window.location.search.substring(1);
@@ -136,3 +109,4 @@ function getURLParameter(sParam)
     }
   }
 }
+*/

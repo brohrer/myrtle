@@ -6,12 +6,10 @@ import time
 import tomllib
 import numpy as np
 import dsmq.client
+from myrtle.config import mq_host, mq_port
 
 # How long to wait in between attempts to read from the message queue.
 _polling_delay = 0.1  # seconds
-
-with open("config.toml", "rb") as f:
-    _config = tomllib.load(f)
 
 
 class BaseAgent:
@@ -46,7 +44,7 @@ class BaseAgent:
     def initialize_mq(self):
         if not self.mq_initialized:
             # Initialize message queue socket.
-            self.mq = dsmq.client.connect(_config["mq_host"], _config["mq_port"])
+            self.mq = dsmq.client.connect(mq_host, mq_port)
             self.mq_initialized = True
 
     def run(self):

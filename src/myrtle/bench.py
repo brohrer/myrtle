@@ -9,20 +9,19 @@ import time
 import tomllib
 
 from myrtle.agents import base_agent
+from myrtle.config import (
+    log_directory, monitor_host, monitor_port, mq_host, mq_port
+)
+from myrtle.monitors import server as monitor_server
 from myrtle.worlds import base_world
 from pacemaker.pacemaker import Pacemaker
 from sqlogging import logging
 
-
 _db_name_default = "bench"
 _logging_frequency = 100  # Hz
 _health_check_frequency = 10.0  # Hz
-_mq_server_setup_delay = 1.0  # seconds
-_shutdown_delay = 4.0  # seconds
-_kill_delay = 0.01  # seconds
-
-with open("config.toml", "rb") as f:
-    _config = tomllib.load(f)
+_warmup_delay = 2.0  # seconds
+_shutdown_timeout = 1.0  # seconds
 
 
 def run(
@@ -36,16 +35,17 @@ def run(
     verbose=False,
 ):
     """
-    timeout (int or None)
-    How long in seconds the world and agent are allowed to run
-    If None, then there is no timeout.
-
     log_to_db (bool)
     If True, log_to_db the results of this run in the results database.
 
     logging_db_name (str)
-    A filename or path + filename to the database where the benchmark results are
-    collected.
+    A filename or path + filename to the database
+    where the benchmark results are collected.
+
+    timeout (int or None)
+    How long in seconds the world and agent are allowed to run
+    If None, then there is no timeout.
+
     """
     control_pacemaker = Pacemaker(_health_check_frequency)
 
@@ -56,13 +56,23 @@ def run(
     except FileNotFoundError:
         pass
 
+    print()
+    print("Follow this run at")
+    print( f"http://{monitor_host}:{monitor_port}/bench.html")
+    print()
+
     # Kick off the message queue process
     p_mq_server = mp.Process(
         target=dsmq.server.serve,
-        args=(_config["mq_host"], _config["mq_port"]),
+        args=(mq_host, mq_port),
     )
     p_mq_server.start()
-    time.sleep(_mq_server_setup_delay)
+
+    # Kick off the web server that shares monitoring pages
+    t_monitor = Thread(target=monitor_server.serve)
+    t_monitor.start()
+
+    time.sleep(_warmup_delay)
 
     world = World(**world_args)
     n_sensors = world.n_sensors
@@ -81,7 +91,10 @@ def run(
 
     # Start up the logging thread, if it's called for.
     if log_to_db:
-        t_logging = Thread(target=_reward_logging, args=(logging_db_name, agent, world))
+        t_logging = Thread(
+            target=_reward_logging,
+            args=(logging_db_name, agent, world, verbose)
+        )
         t_logging.start()
 
     p_agent = mp.Process(target=agent.run)
@@ -90,18 +103,9 @@ def run(
     p_agent.start()
     p_world.start()
 
-    print()
-    print("Follow this run at")
-    print(
-        "myrtle/src/myrtle/bench_monitor.html?" +
-        f"host={_config['mq_host']}&" +
-        f"port={_config['mq_port']}"
-    )
-    print()
-
     # Keep the workbench alive until it's time to close it down.
     # Monitor a "control" topic for a signal to stop everything.
-    mq_client = dsmq.client.connect(_config["mq_host"], _config["mq_port"])
+    mq_client = dsmq.client.connect(mq_host, mq_port)
     run_start_time = time.time()
     while True:
         control_pacemaker.beat()
@@ -135,53 +139,62 @@ def run(
 
     exitcode = 0
     if log_to_db:
-        t_logging.join(_shutdown_delay)
+        t_logging.join(_shutdown_timeout)
         if t_logging.is_alive():
             if verbose:
                 print("    logging didn't shutdown cleanly")
             exitcode = 1
-
-    p_agent.join(_shutdown_delay)
-    p_world.join(_shutdown_delay)
+    monitor_server.shutdown()
+    p_agent.join(_shutdown_timeout)
+    p_world.join(_shutdown_timeout)
 
     # Clean up any processes that might accidentally be still running.
+    if t_monitor.is_alive():
+        if verbose:
+            print("    monitor webserver didn't shutdown cleanly")
+        exitcode = 1
+
     if p_world.is_alive():
         if verbose:
             print("    Doing a hard shutdown on world")
         exitcode = 1
         p_world.kill()
-        time.sleep(_kill_delay)
-        p_world.close()
 
     if p_agent.is_alive():
         if verbose:
             print("    Doing a hard shutdown on agent")
         exitcode = 1
         p_agent.kill()
-        time.sleep(_kill_delay)
-        p_agent.close()
 
     # Shutdown the mq server last
     mq_client.shutdown_server()
     mq_client.close()
 
+    # If clients crashed or haven't closed down cleanly,
+    # they  can leave a file that slows down
+    # dsmq by encouraging to read/write to disk.
+    try:
+        os.remove("file::memory:\\?cache=shared")
+    except FileNotFoundError:
+        pass
+
     return exitcode
 
 
-def _reward_logging(dbname, agent, world):
+def _reward_logging(dbname, agent, world, verbose):
     # Spin up the sqlite database where results are stored.
     # If a logger already exists, use it.
     try:
         logger = logging.open_logger(
             name=dbname,
-            dir_name=_config["log_directory"],
+            dir_name=log_directory,
             level="info",
         )
     except (sqlite3.OperationalError, RuntimeError):
         # If necessary, create a new logger.
         logger = logging.create_logger(
             name=dbname,
-            dir_name=_config["log_directory"],
+            dir_name=log_directory,
             columns=[
                 "reward",
                 "step",
@@ -195,7 +208,7 @@ def _reward_logging(dbname, agent, world):
     run_timestamp = time.time()
     logging_pacemaker = Pacemaker(_logging_frequency)
 
-    logging_mq_client = dsmq.client.connect(_config["mq_host"], _config["mq_port"])
+    logging_mq_client = dsmq.client.connect(mq_host, mq_port)
     while True:
         logging_pacemaker.beat()
 

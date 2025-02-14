@@ -3,14 +3,12 @@ import tomllib
 import numpy as np
 import dsmq.client
 from pacemaker.pacemaker import Pacemaker
+from myrtle.config import mq_host, mq_port
 
 _default_n_loop_steps = 101
 _default_n_episodes = 3
 _default_loop_steps_per_second = 5.0
 _default_speedup = 1.0
-
-with open("config.toml", "rb") as f:
-    _config = tomllib.load(f)
 
 
 class BaseWorld:
@@ -117,7 +115,7 @@ class BaseWorld:
     def initialize_mq(self):
         if not self.mq_initialized:
             # Initialize message queue socket.
-            self.mq = dsmq.client.connect(_config["mq_host"], _config["mq_port"])
+            self.mq = dsmq.client.connect(mq_host, mq_port)
             self.mq_initialized = True
 
     def run(self):
