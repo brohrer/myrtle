@@ -9,7 +9,7 @@ import dsmq.client
 from myrtle.config import mq_host, mq_port
 
 # How long to wait in between attempts to read from the message queue.
-_polling_delay = 0.1  # seconds
+_polling_delay = 0.01  # seconds
 
 
 class BaseAgent:

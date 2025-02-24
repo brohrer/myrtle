@@ -1,9 +1,11 @@
 log_directory = "myrtle_logs"
 
 # mq_host = "192.168.1.10"  # loki
-mq_host = "192.168.1.20"  # aidas
+# mq_host = "192.168.1.20"  # aidas
+mq_host = "127.0.0.1"
 mq_port = 38388  # An arbitrary port
 
 # The address for the webserver that shares the monitor html and js files.
-monitor_host = "192.168.1.20"  # aidas
+# monitor_host = "192.168.1.20"  # aidas
+monitor_host = "127.0.0.1"
 monitor_port = 7777  # An arbitrary port

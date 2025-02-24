@@ -43,6 +43,9 @@ or in a script
 import myrtle.demo
 myrtle.demo.run_demo()
 ```
+an on-screen message will prompt you to follow the run in your
+your browser at
+[`http://127.0.0.1:7777/bench.html`](http://127.0.0.1:7777/bench.html).
 
 To run a RL agent against a world
 
@@ -63,10 +66,15 @@ bench.run(RandomSingleAction, StationaryBandit)
 ## Project layout
 
 ```text
+pyproject.toml
+README.md
 src/
     myrtle/
         bench.py
+        config.toml
+        config.py
         demo.py
+        ...
         agents/
             base_agent.py
             random_single_action.py
@@ -80,10 +88,17 @@ src/
             contextual_bandit.py
             ...
         tests/
-            README.md
+            integration_test_suite.py
             test_base_agent.py
             test_base_world.py
             test_bench.py
+            ...
+        monitors/
+            server.py
+            bench.html
+            bench.js
+            drawing_tools.js
+            num.js
             ...
 ```
 
@@ -305,6 +320,22 @@ There is also a program `"control"` topic, for signaling the end of an
 episode or that it is time to shut down the run.
 Following the conventions of [OpenAI Gym](https://github.com/openai/gym),
 there are `"truncated"` and `"terminated"`.
+
+The IP address and port number of the message queue can be changed in
+[`config.toml`](https://codeberg.org/brohrer/myrtle/src/branch/main/src/myrtle/config.toml)
+as needed.
+
+## Monitoring
+
+The reward collected by the agent can be observed through your browser in
+[a monitoring animation](http://127.0.0.1:7777/bench.html).
+
+Animations are written in Javascript and there are a couple of examples
+[in the `monitors` directory](https://codeberg.org/brohrer/myrtle/src/branch/main/src/myrtle/monitors) if you want to build your own.
+
+The IP address and port number of the web server can be changed in
+[`config.toml`](https://codeberg.org/brohrer/myrtle/src/branch/main/src/myrtle/config.toml)
+as needed.
 
 ## Multiprocess coordination
 

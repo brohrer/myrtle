@@ -52,7 +52,12 @@ def run(
     # If a prior run crashed, it can leave a file that slows down
     # dsmq by encouraging to read/write to disk.
     try:
-        os.remove("file::memory:\\?cache=shared")
+        os.remove("file::memory:?cache=shared")
+    except FileNotFoundError:
+        pass
+
+    try:
+        os.remove("file::memory:?cache=shared-journal")
     except FileNotFoundError:
         pass
 
@@ -174,7 +179,7 @@ def run(
     # they  can leave a file that slows down
     # dsmq by encouraging to read/write to disk.
     try:
-        os.remove("file::memory:\\?cache=shared")
+        os.remove("file::memory:?cache=shared")
     except FileNotFoundError:
         pass
 

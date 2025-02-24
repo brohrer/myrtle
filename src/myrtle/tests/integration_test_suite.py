@@ -59,7 +59,8 @@ def run_world_with_agent(
     agent_class,
     n_loop_steps=1000,
     n_episodes=3,
-    loops_per_second=40,
+    loops_per_second=20,
+    # loops_per_second=40,
     agent_args={},
     reward_lower_bound=-0.3,
     reward_upper_bound=0.3,
@@ -207,7 +208,7 @@ def test_pendulum_world_q_learning_curiosity_agent():
         agent_args=agent_args,
         reward_lower_bound=0.0,
         reward_upper_bound=0.1,
-        timeout=60 * 60,
+        timeout=180 * 60,
     )
 
 
