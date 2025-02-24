@@ -1,4 +1,3 @@
-import tomllib
 import numpy as np
 from myrtle.worlds.base_world import BaseWorld
 from myrtle.config import monitor_host, monitor_port
@@ -48,7 +47,7 @@ class Pendulum(BaseWorld):
 
         print()
         print("Watch the pendulum at")
-        print( f"http://{monitor_host}:{monitor_port}/pendulum.html")
+        print(f"http://{monitor_host}:{monitor_port}/pendulum.html")
         print()
 
         self.reset()

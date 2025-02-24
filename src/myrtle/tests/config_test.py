@@ -12,8 +12,8 @@ def contains(contents, match):
 
 def test_values():
     assert config.js_dir[-8:] == "monitors"
-    assert type(config.monitor_host) == str
-    assert type(config.mq_port) == int
+    assert type(config.monitor_host) is str
+    assert type(config.mq_port) is int
 
 
 def test_toml():

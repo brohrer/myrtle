@@ -97,7 +97,7 @@ src/
             server.py
             bench.html
             bench.js
-            drawing_tools.js
+            drawingTools.js
             num.js
             ...
 ```

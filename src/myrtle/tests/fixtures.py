@@ -1,6 +1,5 @@
 import multiprocessing as mp
 import pytest
-import tomllib
 import dsmq.server
 from myrtle.config import mq_host, mq_port
 
@@ -8,9 +7,7 @@ from myrtle.config import mq_host, mq_port
 @pytest.fixture
 def setup_mq_server():
     # Kick off the dsmq server in a separate process
-    p_mq_server = mp.Process(
-        target=dsmq.server.serve, args=(mq_host, mq_port)
-    )
+    p_mq_server = mp.Process(target=dsmq.server.serve, args=(mq_host, mq_port))
     p_mq_server.start()
 
     # This client is an off switch for the server.

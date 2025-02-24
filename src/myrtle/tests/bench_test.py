@@ -1,8 +1,6 @@
 from multiprocessing import Process
-from threading import Thread
 import os
 import time
-import tomllib
 import dsmq.client
 from sqlogging import logging
 from myrtle import bench

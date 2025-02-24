@@ -1,13 +1,9 @@
 - Visual monitoring
-  - For top level Myrtle
-  - For world
-  - For agent
-  - Separate process for each
-  - Parameters passed as args
-  - Fixed location, size
-  - Left side, top half for top level Myrtle
-  - Left side, bottom half for world
-  - Right side for agent
+    - bench
+    - pendulum
+
+- update README process diagram
+    - find a new drawing program. Inkscape?
 
 - Get Pendulum working with BucketTree, Ziptie, and FNC
 

@@ -10,13 +10,13 @@ def test_server():
     Thread(target=server.serve).start()
     r = requests.get(f"http://{monitor_host}:{monitor_port}/bench.html")
     assert r.status_code == 200
-    assert r.text[:15] == '<!DOCTYPE html>'
+    assert r.text[:15] == "<!DOCTYPE html>"
     server.shutdown()
 
     try:
         r = requests.get(f"http://{monitor_host}:{monitor_port}/bench.html")
         assert False
-    except (requests.exceptions.ConnectionError):
+    except requests.exceptions.ConnectionError:
         assert True
 
 

@@ -1,5 +1,4 @@
 import json
-import tomllib
 import numpy as np
 import dsmq.client
 from pacemaker.pacemaker import Pacemaker
@@ -73,7 +72,6 @@ class BaseWorld:
         """
         self.n_loop_steps = n_loop_steps
         self.n_episodes = n_episodes
-
 
         # `i_loop_step` counts the number of world->agent->world loop iterations,
         # time steps for the RL algo.

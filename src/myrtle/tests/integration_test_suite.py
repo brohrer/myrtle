@@ -5,7 +5,6 @@ Longer-running tests, providing a deeper functionality check
 import os
 import time
 from sqlogging import logging
-import tomllib
 from myrtle import bench
 from myrtle.config import log_directory
 

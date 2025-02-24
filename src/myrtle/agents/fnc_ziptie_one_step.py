@@ -186,7 +186,7 @@ class FNCZiptieOneStep(BaseAgent):
             f"Average reward of {avg_reward} at time step {self.i_step:,},"
             + f" episode {self.i_episode}"
         )
-        n_2_cable_bundles = (np.where(self.ziptie.n_cables_by_bundle == 2)[0]).size
+        # n_2_cable_bundles = (np.where(self.ziptie.n_cables_by_bundle == 2)[0]).size
         print(f"{self.ziptie.n_bundles} bundles created")
         # print(f"{self.ziptie.n_bundles} bundles created, 2 cable bundles {n_2_cable_bundles}")
         print()

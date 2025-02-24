@@ -6,12 +6,9 @@ import os
 import sqlite3
 from threading import Thread
 import time
-import tomllib
 
 from myrtle.agents import base_agent
-from myrtle.config import (
-    log_directory, monitor_host, monitor_port, mq_host, mq_port
-)
+from myrtle.config import log_directory, monitor_host, monitor_port, mq_host, mq_port
 from myrtle.monitors import server as monitor_server
 from myrtle.worlds import base_world
 from pacemaker.pacemaker import Pacemaker
@@ -63,7 +60,7 @@ def run(
 
     print()
     print("Follow this run at")
-    print( f"http://{monitor_host}:{monitor_port}/bench.html")
+    print(f"http://{monitor_host}:{monitor_port}/bench.html")
     print()
 
     # Kick off the message queue process
@@ -97,8 +94,7 @@ def run(
     # Start up the logging thread, if it's called for.
     if log_to_db:
         t_logging = Thread(
-            target=_reward_logging,
-            args=(logging_db_name, agent, world, verbose)
+            target=_reward_logging, args=(logging_db_name, agent, world, verbose)
         )
         t_logging.start()
 

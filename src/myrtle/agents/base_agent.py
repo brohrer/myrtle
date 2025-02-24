@@ -1,9 +1,9 @@
 """
 Chooses a single random action at each step.
 """
+
 import json
 import time
-import tomllib
 import numpy as np
 import dsmq.client
 from myrtle.config import mq_host, mq_port
