@@ -1,9 +1,12 @@
-- Visual monitoring
-    - bench
-    - pendulum
+- add timeouts to joins
+
+- get local secrets working
+    - pypi token
 
 - update README process diagram
     - find a new drawing program. Inkscape?
+
+- release updated monitors
 
 - Get Pendulum working with BucketTree, Ziptie, and FNC
 

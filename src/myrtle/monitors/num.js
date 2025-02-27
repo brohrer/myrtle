@@ -42,7 +42,7 @@ export function min(arr) {
 export function prettySpacedArray(extentA, extentB, minLength = 9) {
   let minValue = min([extentA, extentB]);
   let maxValue = max([extentA, extentB]);
-  let maxInterval = (maxValue - minValue + epsilon) / (minLength - 2);
+  let maxInterval = (maxValue - minValue + epsilon) / (minLength - 1.5);
   let logInterval = Math.log10(maxInterval);
   let logIntervalBase = Math.floor(logInterval);
   let logIntervalRemainder = logInterval - logIntervalBase;
@@ -75,8 +75,8 @@ export function prettySpacedArray(extentA, extentB, minLength = 9) {
     interval *= 2.5;
   }
 
-  let lowestValue = interval * Math.floor(minValue / interval);
-  let highestValue = interval * Math.ceil((maxValue + epsilon) / interval);
+  let lowestValue = interval * Math.round(minValue / interval);
+  let highestValue = interval * Math.round((maxValue + epsilon) / interval);
   let valArray = intervalSpacedArray(lowestValue, highestValue, interval, true);
   let strArray = [];
 
@@ -85,7 +85,14 @@ export function prettySpacedArray(extentA, extentB, minLength = 9) {
     if (precision > 0) {
       strArray[i] = valArray[i].toFixed(precision);
     } else {
-      strArray[i] = Math.round(valArray[i]);
+      let value = Math.round(valArray[i]);
+      if (interval % 1000000 == 0 && value != 0 ) {
+        strArray[i] = `${value / 1000000}M`;
+      } else if (interval % 1000 == 0 && value != 0) {
+        strArray[i] = `${value / 1000}K`;
+      } else {
+        strArray[i] = value;
+      }
     }
   }
   return [valArray, strArray];

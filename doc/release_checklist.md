@@ -9,6 +9,8 @@
 - `git add ...`
 - `git commit -m "..."`
 - `git push origin HEAD`
+- `git push github HEAD`
+- `git push gitlab HEAD`
 - delete contents of `dist/`
 - `uv build`
 - `uv publish --token <pypi-api-token>`

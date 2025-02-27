@@ -34,6 +34,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 Repository = "https://codeberg.org/brohrer/myrtle.git"
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/myrtle"]
+
 [tool.hatch.build.targets.sdist]
 sources = ["/", "src/myrtle"]
 include = [

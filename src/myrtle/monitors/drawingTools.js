@@ -80,6 +80,149 @@ export class Axes {
   }
 }
 
+// All the decorations and accoutrements of a 2 dimensional plot,
+// like baselines and ticks. Opinionated, non-standard design.
+export class Chart {
+  constructor(canvasContext, axes) {
+    this.ctx = canvasContext;
+    this.ax = axes;
+    this.backgroundColor = 'Black';
+    this.color = 'White';
+    this.lineWidth = 1.0;
+    this.baseline = 0.0;
+
+    this.xAxisLabelBody = '';
+    this.xAxisLabelXOffset = this.ax.width / 2;
+    this.xAxisLabelYOffset = this.ax.height / 3;
+
+    this.yAxisLabelBody = '';
+    this.yAxisLabelXOffset = this.ax.width / 4;
+    this.yAxisLabelYOffset = this.ax.height * 0.6;
+
+    this.minXTicks = 4;
+    this.tickXLength = this.ax.height / 20;
+    this.tickXOffset = this.ax.height / 30;
+    this.tickXLabelOffset = this.ax.height / 60;
+
+    this.minYTicks = 4;
+    this.tickYLength = this.ax.width / 80;
+    this.tickYOffset = this.ax.width / 100;
+    this.tickYLabelOffset = this.ax.width / 100;
+
+    this.font = "14px Courier New";
+    this.largeFont = "18px Courier New";
+  }
+
+  render() {
+    // Baseline
+    let baselineX = [this.ax.leftPixel, this.ax.rightPixel];
+    let baselineY = this.ax.scaleY([this.baseline, this.baseline]);
+    let baselinePath = new Path(this.ctx, baselineX, baselineY);
+    baselinePath.lineWidth = this.lineWidth;
+    baselinePath.color = this.color;
+    baselinePath.draw();
+
+    // x-Tick lines
+    let [tickXArray, tickXLabelArray] = num.prettySpacedArray(
+      this.ax.leftValue,
+      this.ax.rightValue,
+      this.minXTicks,
+    )
+    for (let i = 0; i < tickXArray.length; i++) {
+      let tickXXPixels = this.ax.scaleX([tickXArray[i], tickXArray[i]]);
+      let tickXYPixels = [
+        this.ax.bottomPixel + this.tickXOffset,
+        this.ax.bottomPixel + this.tickXLength + this.tickXOffset,
+      ];
+      let tickXPath = new Path(this.ctx, tickXXPixels, tickXYPixels);
+      tickXPath.lineWidth = this.linewidth;
+      tickXPath.color = this.color;
+      tickXPath.draw();
+
+      let tickXLabelPixel = this.ax.bottomPixel +
+        this.tickXLength +
+        this.tickXOffset +
+        this.tickXLabelOffset;
+      let tickXLabel = new Text(
+        this.ctx,
+        tickXXPixels[0],
+        tickXLabelPixel,
+        tickXLabelArray[i],
+      );
+      tickXLabel.color = this.color;
+      tickXLabel.font = this.font;
+      tickXLabel.textBaseline = 'top';
+      tickXLabel.textAlign = 'center';
+      tickXLabel.draw();
+    }
+
+    // y-Tick lines
+    let [tickYArray, tickYLabelArray] = num.prettySpacedArray(
+      this.ax.bottomValue,
+      this.ax.topValue,
+      this.minYTicks,
+    )
+    for (let i = 0; i < tickYArray.length; i++) {
+      let tickYXPixels = [
+        this.ax.rightPixel + this.tickYOffset,
+        this.ax.rightPixel + this.tickYLength + this.tickYOffset,
+      ];
+      let tickYYPixels = this.ax.scaleY([tickYArray[i], tickYArray[i]]);
+      let tickYPath = new Path(this.ctx, tickYXPixels, tickYYPixels);
+      tickYPath.lineWidth = this.linewidth;
+      tickYPath.color = this.color;
+      tickYPath.draw();
+
+      let tickYLabelPixel = this.ax.rightPixel +
+        this.tickYLength +
+        this.tickYOffset +
+        this.tickYLabelOffset;
+      let tickYLabel = new Text(
+        this.ctx,
+        tickYLabelPixel,
+        tickYYPixels[0],
+        tickYLabelArray[i],
+      );
+      tickYLabel.color = this.color,
+      tickYLabel.font = this.font,
+      tickYLabel.textBaseline = 'middle';
+      tickYLabel.textAlign = 'left';
+      tickYLabel.draw();
+    }
+
+    // x-axis label
+    let xAxisLabelXPixel = this.ax.leftPixel + this.xAxisLabelXOffset;
+    let xAxisLabelYPixel = this.ax.bottomPixel + this.xAxisLabelYOffset;
+    let xAxisLabel = new Text(
+      this.ctx,
+      xAxisLabelXPixel,
+      xAxisLabelYPixel,
+      this.xAxisLabelBody,
+    );
+    xAxisLabel.color = this.color,
+    xAxisLabel.font = this.largeFont,
+    xAxisLabel.textBaseline = 'top';
+    xAxisLabel.textAlign = 'center';
+    xAxisLabel.draw();
+
+    // y-axis label
+    let yAxisLabelXPixel = this.ax.rightPixel + this.yAxisLabelXOffset;
+    let yAxisLabelYPixel = this.ax.bottomPixel - this.yAxisLabelYOffset;
+    let yAxisLabel = new Text(
+      this.ctx,
+      yAxisLabelXPixel,
+      yAxisLabelYPixel,
+      this.yAxisLabelBody,
+    );
+    yAxisLabel.color = this.color,
+    yAxisLabel.font = this.largeFont,
+    yAxisLabel.textBaseline = 'left';
+    yAxisLabel.textAlign = 'middle';
+    yAxisLabel.draw();
+
+  }
+}
+
 export class Path {
   constructor(canvasContext, x, y) {
     this.ctx = canvasContext;
@@ -101,66 +244,6 @@ export class Path {
       this.ctx.lineTo(this.x[i], this.y[i]);
     }
     this.ctx.stroke();
-  }
-}
-
-// All the decorations and accoutrements of a 2 dimensional plot,
-// like baselines and ticks. Opinionated, non-standard design.
-export class Chart {
-  constructor(canvasContext, axes) {
-    this.ctx = canvasContext;
-    this.ax = axes;
-    this.backgroundColor = 'Black';
-    this.color = 'White';
-    this.lineWidth = 1.0;
-    this.baseline = 0.0;
-    this.minTicks = 4;
-    this.tickLength = this.ax.width / 40;
-    this.tickOffset = this.ax.width / 40;
-    this.tickLabelOffset = this.ax.width / 40;
-    this.font = "14px Courier New";
-  }
-
-  render() {
-    // Baseline
-    let baselineX = [this.ax.leftPixel, this.ax.rightPixel];
-    let baselineY = this.ax.scaleY([this.baseline, this.baseline]);
-    let baselinePath = new Path(this.ctx, baselineX, baselineY);
-    baselinePath.lineWidth = this.lineWidth;
-    baselinePath.color = this.color;
-    baselinePath.draw();
-
-    // Tick lines
-    let [tickYArray, tickYLabelArray] = num.prettySpacedArray(
-      this.ax.bottomValue,
-      this.ax.topValue,
-      this.minTicks,
-    )
-    for (let i = 0; i < tickYArray.length; i++) {
-      let tickX = [
-        this.ax.rightPixel + this.tickOffset,
-        this.ax.rightPixel + this.tickLength + this.tickOffset,
-      ];
-      let tickYPixel = this.ax.scaleY([tickYArray[i], tickYArray[i]]);
-      let tickPath = new Path(this.ctx, tickX, tickYPixel);
-      tickPath.lineWidth = this.linewidth;
-      tickPath.color = this.color;
-      tickPath.draw();
-
-      let tickLabelX = this.ax.rightPixel +
-        this.tickLength +
-        this.tickOffset +
-        this.tickLabelOffset;
-      let tickLabel = new Text(
-        this.ctx,
-        tickLabelX,
-        tickYPixel[0],
-        tickYLabelArray[i],
-      );
-      tickLabel.color = this.color,
-      tickLabel.font = this.font,
-      tickLabel.draw();
-    }
   }
 }
 

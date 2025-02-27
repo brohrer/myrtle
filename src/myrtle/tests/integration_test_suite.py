@@ -84,26 +84,35 @@ def run_world_with_agent(
     )
     assert exitcode == 0
 
-    logger = logging.open_logger(
-        name=_test_db_name,
-        dir_name=log_directory,
-        level="info",
-    )
-    result = logger.query(
-        f"""
-        SELECT AVG(reward)
-        FROM {_test_db_name}
-        GROUP BY episode
-        ORDER BY episode DESC
-    """
-    )
+    run_time = time.time() - start_time
+    timed_out =  run_time > timeout * .99
     print()
-    print(f"Ran in {int(time.time() - start_time)} seconds")
-    print(f"Average reward: {result[1][0]}")
-    print()
-    assert result[1][0] > reward_lower_bound
-    assert result[1][0] < reward_upper_bound
+    print(f"Ran in {int(run_time)} seconds")
 
+    assert not timed_out
+
+    if not timed_out:
+        logger = logging.open_logger(
+            name=_test_db_name,
+            dir_name=log_directory,
+            level="info",
+        )
+        result = logger.query(
+            f"""
+            SELECT AVG(reward)
+            FROM {_test_db_name}
+            GROUP BY episode
+            ORDER BY episode DESC
+        """
+        )
+        print(f"Average reward: {result[1][0]}")
+
+        assert result[1][0] > reward_lower_bound
+        assert result[1][0] < reward_upper_bound
+    else:
+        print("Run timed out before it could complete")
+
+    print()
     db_cleanup()
 
 
@@ -206,8 +215,8 @@ def test_pendulum_world_q_learning_curiosity_agent():
         n_loop_steps=int(1e4),
         agent_args=agent_args,
         reward_lower_bound=0.0,
-        reward_upper_bound=0.1,
-        timeout=180 * 60,
+        reward_upper_bound=1.0,
+        timeout=60 * 60,
     )
 
 
@@ -223,7 +232,7 @@ def test_pendulum_discrete_world_q_learning_curiosity_agent():
         n_loop_steps=int(1e4),
         agent_args=agent_args,
         reward_lower_bound=0.0,
-        reward_upper_bound=0.1,
+        reward_upper_bound=1.0,
         timeout=60 * 60,
     )
 

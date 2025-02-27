@@ -1,18 +1,22 @@
-//import { arrayMin, arrayMax } from './num.js';
-import { mq_host, mq_port } from './config.js';
+import * as config from './config.js';
+import * as art from './drawingTools.js'
+import * as num from './num.js';
 
-const addr = `ws://${mq_host}:${mq_port}`;
+const addr = `ws://${config.mq_host}:${config.mq_port}`;
 const socket = new WebSocket(addr);
 
-// get canvas and context
 let canvas = document.getElementById('the-canvas'),
 ctx = canvas.getContext('2d');
 
-// some kind of state for the animation
-const x_center = canvas.width / 2,
-y_center = canvas.width / 2,
-dy_text = 0.07 * canvas.width,
-radius = canvas.width / 4;
+// Placement of the animation and text
+const xCenterPixel = canvas.width / 2;
+const yCenterPixel = canvas.width / 2;
+const textYOffset = 0.07 * canvas.width;
+const radius = canvas.width / 4;
+
+// Determines whether an update to the display is needed.
+// Refreshes to true every time a non-empty message is received.
+let redraw = true;
 
 let msg = '';
 let reward = 0.0;
@@ -21,10 +25,50 @@ let velocity = 0.0;
 let step = 0;
 let episode = 0;
 
+loop();
+
+function render() {
+  ctx.fillStyle = 'Black';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = 'CadetBlue';
+  ctx.beginPath();
+  ctx.arc(
+    xCenterPixel + radius * Math.sin(angle),
+    yCenterPixel + radius * Math.cos(angle),
+    10,
+    0,
+    Math.PI * 2
+  );
+  ctx.fill();
+
+  let yText = canvas.width * 0.94;
+  let xText = canvas.width / 4;
+  ctx.font = "20px Courier New";
+  ctx.fillText(`reward     ${reward.toFixed(3)}`, xText, yText);
+  ctx.fillText(`angle      ${angle.toFixed(2)}`, xText, yText + textYOffset * 1);
+  if (velocity < 0){
+    ctx.fillText(
+      `velocity  ${velocity.toFixed(2)}`,
+      xText,
+      yText + textYOffset * 2
+    );
+  } else {
+    ctx.fillText(
+      `velocity   ${velocity.toFixed(2)}`,
+      xText,
+      yText + textYOffset * 2
+    );
+  };
+  ctx.fillText(`step       ${step}`, xText, yText + textYOffset * 3);
+  ctx.fillText(`episode    ${episode}`, xText, yText + textYOffset * 4);
+
+  redraw = false;
+}
+
 socket.onmessage = (event) => {
-  console.log(event.data);
   let obj = JSON.parse(event.data);
   if (obj.message !== ""){
+    redraw = true;
     msg = obj.message;
     let values = JSON.parse(msg);
     let sensor_array = values.sensors;
@@ -40,53 +84,17 @@ socket.onmessage = (event) => {
 };
 
 // Main APP loop
-var loop = function () {
-    try {
-      socket.send('{"action": "get", "topic": "world_step"}');
-    }
-    catch(InvalidStateError) {
-      console.log("InvalidStateError caught");
-    }
+function loop() {
+  try {
+    socket.send('{"action": "get", "topic": "world_step"}');
+  }
+  catch(InvalidStateError) {
+    console.log("InvalidStateError caught");
+  }
 
-    // draw
-    // choose from colors
-    // https://www.w3schools.com/colors/colors_names.asp
-    ctx.fillStyle = 'Black';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = 'CadetBlue';
-    ctx.beginPath();
-    ctx.arc(
-      x_center + radius * Math.sin(angle),
-      y_center + radius * Math.cos(angle),
-      10,
-      0,
-      Math.PI * 2
-    );
-    ctx.fill();
-
-    let y_text = canvas.width * 0.94;
-    let x_text = canvas.width / 4;
-    ctx.font = "24px Courier New";
-    ctx.fillText(`reward     ${reward.toFixed(3)}`, x_text, y_text);
-    ctx.fillText(`angle      ${angle.toFixed(2)}`, x_text, y_text + dy_text * 1);
-    if (velocity < 0){
-      ctx.fillText(
-        `velocity  ${velocity.toFixed(2)}`,
-        x_text,
-        y_text + dy_text * 2
-      );
-    } else {
-      ctx.fillText(
-        `velocity   ${velocity.toFixed(2)}`,
-        x_text,
-        y_text + dy_text * 2
-      );
-    };
-    ctx.fillText(`step       ${step}`, x_text, y_text + dy_text * 3);
-    ctx.fillText(`episode    ${episode}`, x_text, y_text + dy_text * 4);
-
-    //request next frame
-    requestAnimationFrame(loop);
+  if (redraw) {
+    render();
+  }
+  //request next frame
+  requestAnimationFrame(loop);
 };
-
-loop()
