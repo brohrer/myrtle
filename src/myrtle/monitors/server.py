@@ -47,14 +47,6 @@ def shutdown():
 
 
 class MonitorWebServer(ThreadingHTTPServer):
-    # def server_bind(self):
-    # This is a trick to make the socket instantly re-usable
-    # in case of [Errno 98] Address already in use. from
-    # https://stackoverflow.com/questions/6380057/address-already-in-use-error-when-binding-a-socket-in-python/18858817#18858817
-    # self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-    # return super().server_bind()
-
     def finish_request(self, request, client_address):
         self.RequestHandlerClass(
             request,

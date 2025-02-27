@@ -85,7 +85,7 @@ def run_world_with_agent(
     assert exitcode == 0
 
     run_time = time.time() - start_time
-    timed_out =  run_time > timeout * .99
+    timed_out = run_time > timeout * 0.99
     print()
     print(f"Ran in {int(run_time)} seconds")
 

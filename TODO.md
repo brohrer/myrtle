@@ -1,14 +1,8 @@
-- add timeouts to joins
-
-- get local secrets working
-    - pypi token
-
-- update README process diagram
-    - find a new drawing program. Inkscape?
-
 - release updated monitors
 
 - Get Pendulum working with BucketTree, Ziptie, and FNC
+
+- Get demo learning
 
 - Create new Worlds
   - Cart pole
@@ -17,3 +11,6 @@
 
 - Build new components
   - Incremental mean and variance estimate
+
+- make webserver a process. Kill when it fails to shutdown on its own.
+
