@@ -3,8 +3,9 @@ from myrtle.worlds.pendulum import Pendulum
 
 
 class PendulumDiscrete(Pendulum):
+    name = "Discrete Valued Pendulum"
+
     def reset_sensors(self):
-        self.name = "Discrete Valued Pendulum"
         self.n_positions = 36
         positions = np.zeros(self.n_positions)
 
@@ -28,3 +29,4 @@ class PendulumDiscrete(Pendulum):
         velocities[i_velocity] = 1
 
         self.sensors = np.concatenate((positions, velocities))
+        self.write_pendulum_state()

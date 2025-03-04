@@ -10,9 +10,9 @@ class PendulumDiscreteOneHot(Pendulum):
     velocity. The total number of states is the number of possible
     position bins multiplied by the number of possible velocity bins.
     """
+    name = "Discrete Valued, One-Hot Pendulum"
 
     def reset_sensors(self):
-        self.name = "Discrete Valued, One-Hot Pendulum"
         self.n_positions = 36
 
         self.velocity_bins = np.linspace(-15.0, 15.0, 61)
@@ -35,3 +35,4 @@ class PendulumDiscreteOneHot(Pendulum):
         # and the velocity index.
         i_state = i_position * self.n_velocities + i_velocity
         self.sensors[i_state] = 1
+        self.write_pendulum_state()

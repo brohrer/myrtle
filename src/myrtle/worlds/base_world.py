@@ -22,6 +22,7 @@ class BaseWorld:
 
     but you may find you need to dig deeper to get the behaviors you want.
     """
+    name = "Base world"
 
     def __init__(
         self,
@@ -53,7 +54,6 @@ class BaseWorld:
             world_steps_per_second=world_steps_per_second,
             speedup=speedup,
         )
-        self.name = "Base world"
 
         self.n_sensors = 13
         self.n_actions = 5
@@ -70,8 +70,8 @@ class BaseWorld:
         """
         This boilerplate will need to be run when initializing most worlds.
         """
-        self.n_loop_steps = n_loop_steps
-        self.n_episodes = n_episodes
+        self.n_loop_steps = int(n_loop_steps)
+        self.n_episodes = int(n_episodes)
 
         # `i_loop_step` counts the number of world->agent->world loop iterations,
         # time steps for the RL algo.

@@ -3,6 +3,8 @@ from myrtle.agents.base_agent import BaseAgent
 
 
 class QLearningEpsilon(BaseAgent):
+    name = "Epsilon-Greedy Q-Learning"
+
     def __init__(
         self,
         n_sensors=None,
@@ -13,7 +15,6 @@ class QLearningEpsilon(BaseAgent):
         discount_factor=0.5,
         learning_rate=0.01,
     ):
-        self.name = "Epsilon-Greedy Q-Learning"
         self.init_common(
             n_sensors=n_sensors,
             n_actions=n_actions,

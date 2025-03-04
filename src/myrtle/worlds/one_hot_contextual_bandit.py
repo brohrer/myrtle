@@ -13,6 +13,7 @@ class OneHotContextualBandit(BaseWorld):
     This world tests an agent's ability to use sensor information to determine
     which action to take.
     """
+    name = "One-hot contextual bandit"
 
     def __init__(
         self,
@@ -25,8 +26,6 @@ class OneHotContextualBandit(BaseWorld):
             n_episodes=n_episodes,
             loop_steps_per_second=loop_steps_per_second,
         )
-        self.name = "One-hot contextual bandit"
-
         self.n_sensors = 16
         self.n_actions = 4
         self.n_rewards = 4

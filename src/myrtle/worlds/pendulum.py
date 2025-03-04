@@ -1,3 +1,4 @@
+import json
 import numpy as np
 from myrtle.worlds.base_world import BaseWorld
 from myrtle.config import monitor_host, monitor_port
@@ -26,6 +27,7 @@ class Pendulum(BaseWorld):
         Negative actions are clockwise torque.
         All torques are in Newton-meters.
     """
+    name = "Pendulum"
 
     def __init__(
         self,
@@ -42,9 +44,6 @@ class Pendulum(BaseWorld):
             world_steps_per_second=world_steps_per_second,
             speedup=speedup,
         )
-
-        self.name = "Pendulum"
-
         print()
         print("Watch the pendulum at")
         print(f"http://{monitor_host}:{monitor_port}/pendulum.html")
@@ -143,6 +142,18 @@ class Pendulum(BaseWorld):
 
     def step_sensors(self):
         self.sensors = np.array([self.position, self.velocity])
+        self.write_pendulum_state()
+
+    def write_pendulum_state(self):
+        msg = json.dumps(
+            {
+                "loop_step": self.i_loop_step,
+                "episode": self.i_episode,
+                "position": self.position,
+                "velocity": self.velocity,
+            }
+        )
+        self.mq.put("pendulum_state", msg)
 
     def display(self):
         n_lines = 3

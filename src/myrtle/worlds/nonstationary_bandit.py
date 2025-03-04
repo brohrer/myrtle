@@ -3,6 +3,8 @@ from myrtle.worlds.base_world import BaseWorld
 
 
 class NonStationaryBandit(BaseWorld):
+    name = "Non-stationary bandit"
+
     def __init__(
         self,
         n_loop_steps=1000,
@@ -14,8 +16,6 @@ class NonStationaryBandit(BaseWorld):
             n_episodes=n_episodes,
             loop_steps_per_second=loop_steps_per_second,
         )
-        self.name = "Non-stationary bandit"
-
         self.n_sensors = 0
         self.n_actions = 5
         self.n_rewards = 5

@@ -3,6 +3,8 @@ from myrtle.agents.base_agent import BaseAgent
 
 
 class GreedyStateBlindEpsilon(BaseAgent):
+    name = "Epsilon-Greedy State-Blind"
+
     def __init__(
         self,
         n_sensors=None,
@@ -10,7 +12,6 @@ class GreedyStateBlindEpsilon(BaseAgent):
         n_rewards=None,
         epsilon=0.1,
     ):
-        self.name = "Epsilon-Greedy State-Blind"
         self.init_common(
             n_sensors=n_sensors,
             n_actions=n_actions,

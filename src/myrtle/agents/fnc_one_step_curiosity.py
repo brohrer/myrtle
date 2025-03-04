@@ -12,6 +12,7 @@ class FNCOneStepCuriosity(BaseAgent):
 
     See https://brandonrohrer.com/cartographer
     """
+    name = "Naive Cartographer with One-Step Lookahead and Curiosity"
 
     def __init__(
         self,
@@ -30,7 +31,6 @@ class FNCOneStepCuriosity(BaseAgent):
         log_dir=".",
         logging_level="info",
     ):
-        self.name = "Naive Cartographer with One-Step Lookahead and Curiosity"
         self.n_sensors = n_sensors
         self.n_actions = n_actions
         self.n_rewards = n_rewards

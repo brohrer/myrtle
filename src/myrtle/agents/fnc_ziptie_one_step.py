@@ -13,6 +13,7 @@ class FNCZiptieOneStep(BaseAgent):
 
     See https://brandonrohrer.com/cartographer
     """
+    name = "Naive Cartographer with One-Step Lookahead and Curiosity"
 
     def __init__(
         self,
@@ -33,7 +34,6 @@ class FNCZiptieOneStep(BaseAgent):
         log_dir=".",
         logging_level="info",
     ):
-        self.name = "Naive Cartographer with One-Step Lookahead and Curiosity"
         self.n_sensors = n_sensors
         if n_features is None:
             self.n_max_features = n_sensors

@@ -5,6 +5,7 @@ from threading import Thread
 import time
 from myrtle.config import monitor_host, monitor_port, js_dir, write_config_js
 
+_short_pause = 0.01  # seconds
 _pause = 1.0  # seconds
 _protocol = "HTTP/1.0"
 
@@ -21,12 +22,7 @@ def serve():
     KillableHandler.protocol_version = _protocol
     httpd = MonitorWebServer(addr, KillableHandler)
 
-    try:
-        httpd.serve_forever()
-    except KeyboardInterrupt:
-        print("\nKeyboard interrupt received, exiting.")
-        sys.exit(0)
-
+    httpd.serve_forever()
     httpd.server_close()
 
 
@@ -35,15 +31,21 @@ def shutdown():
         n_retries = 3
         for _ in range(n_retries):
             try:
-                requests.post(f"http://{host}:{port}/kill_server")
+                try:
+                    requests.post(f"http://{host}:{port}/kill_server")
+                except requests.exceptions.ChunkedEncodingError:
+                    # Catch the case where some communcations get interrrupted,
+                    # but don't do anything about it.
+                    pass
                 return
             except requests.exceptions.ConnectionError:
-                pass
+                time.sleep(_short_pause)
 
-    Thread(target=kill_server, args=(monitor_host, monitor_port)).start()
+        sys.exit(0)
 
-    # Give the server time to wind down before resuming activities.
-    time.sleep(_pause)
+    t_kill = Thread(target=kill_server, args=(monitor_host, monitor_port))
+    t_kill.start()
+    t_kill.join(_pause)
 
 
 class MonitorWebServer(ThreadingHTTPServer):
@@ -59,23 +61,17 @@ class MonitorWebServer(ThreadingHTTPServer):
         pass
 
 
-"""
-Stolen and modified from
-https://stackoverflow.com/questions/10085996/shutdown-socketserver-serve-forever-in-one-thread-python-application
-"""
-
-
 class KillableHandler(SimpleHTTPRequestHandler):
     def do_POST(self):
         global httpd
         if self.path.startswith("/kill_server"):
-            print("Server is going down")
-
-            def kill_me_please(server):
-                server.shutdown()
-
-            Thread(target=kill_me_please, args=(httpd,)).start()
+            httpd.shutdown()
             self.send_error(500)
+
+    # This silences all server messages to stdout.
+    # If you're debugging the server, comment this out.
+    def log_message(self, format, *args):
+        return
 
 
 if __name__ == "__main__":

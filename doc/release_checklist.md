@@ -13,7 +13,7 @@
 - `git push gitlab HEAD`
 - delete contents of `dist/`
 - `uv build`
-- `uv publish --token <pypi-api-token>`
+- `uv publish --token $PYPI_TOKEN`
 - (as needed) update public posts
 - (optional) write a blog post
 - (optional) publish on social media

@@ -42,6 +42,8 @@ const slowHistoryBinSize = 500;
 /*
 Globals
 */
+let done = false;
+
 let msg = '';
 let reward = 0.0;
 let totalMedReward = 0;
@@ -247,6 +249,11 @@ socket.onmessage = (event) => {
   };
 };
 
+socket.onclose = function (event) {
+  done = true;
+  console.log('disconnected');
+};
+
 function loop() {
   try {
     socket.send('{"action": "get", "topic": "world_step"}');
@@ -260,5 +267,7 @@ function loop() {
   }
 
   //request next frame
-  requestAnimationFrame(loop);
+  if (done == false) {
+    requestAnimationFrame(loop);
+  }
 };

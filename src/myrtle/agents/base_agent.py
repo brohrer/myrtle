@@ -13,13 +13,14 @@ _polling_delay = 0.01  # seconds
 
 
 class BaseAgent:
+    name = "Base agent"
+
     def __init__(
         self,
         n_sensors=None,
         n_actions=None,
         n_rewards=None,
     ):
-        self.name = "Base agent"
         self.init_common(
             n_sensors=n_sensors,
             n_actions=n_actions,

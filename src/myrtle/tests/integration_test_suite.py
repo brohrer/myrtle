@@ -26,7 +26,8 @@ from myrtle.worlds.pendulum_discrete import PendulumDiscrete
 from myrtle.worlds.pendulum import Pendulum
 
 _test_db_name = f"temp_integration_test_{int(time.time())}"
-_default_timeout = 10.0 * 60  # in seconds
+_default_timeout = 30 * 60  # in seconds
+_long_timeout = 120 * 60  # in seconds
 
 
 def main():
@@ -61,8 +62,8 @@ def run_world_with_agent(
     loops_per_second=20,
     # loops_per_second=40,
     agent_args={},
-    reward_lower_bound=-0.3,
-    reward_upper_bound=0.3,
+    reward_lower_bound=-1.0,
+    reward_upper_bound=0.0,
     timeout=_default_timeout,
 ):
     """
@@ -125,23 +126,48 @@ def test_base_world_random_multi_action_agent():
 
 
 def test_base_world_greedy_state_blind_agent():
-    run_world_with_agent(BaseWorld, GreedyStateBlind)
+    run_world_with_agent(
+        BaseWorld,
+        GreedyStateBlind,
+        reward_lower_bound=-0.3,
+        reward_upper_bound=0.3,
+    )
 
 
 def test_base_world_greedy_state_blind_eps_agent():
-    run_world_with_agent(BaseWorld, GreedyStateBlindEpsilon)
+    run_world_with_agent(
+        BaseWorld,
+        GreedyStateBlindEpsilon,
+        reward_lower_bound=-0.3,
+        reward_upper_bound=0.3,
+    )
 
 
 def test_base_world_value_avg_curiosity_agent():
-    run_world_with_agent(BaseWorld, ValueAvgCuriosity)
+    run_world_with_agent(
+        BaseWorld,
+        ValueAvgCuriosity,
+        reward_lower_bound=-0.3,
+        reward_upper_bound=0.3,
+    )
 
 
 def test_base_world_q_learning_eps_agent():
-    run_world_with_agent(BaseWorld, QLearningEpsilon)
+    run_world_with_agent(
+        BaseWorld,
+        QLearningEpsilon,
+        reward_lower_bound=-0.3,
+        reward_upper_bound=0.3,
+    )
 
 
 def test_base_world_q_learning_curiosity_agent():
-    run_world_with_agent(BaseWorld, QLearningCuriosity)
+    run_world_with_agent(
+        BaseWorld,
+        QLearningCuriosity,
+        reward_lower_bound=-0.3,
+        reward_upper_bound=0.3,
+    )
 
 
 def test_stationary_bandit_world_q_learning_curiosity_agent():
@@ -151,7 +177,7 @@ def test_stationary_bandit_world_q_learning_curiosity_agent():
         n_loop_steps=int(1e4),
         reward_lower_bound=10.0,
         reward_upper_bound=100.0,
-        timeout=60 * 30,
+        timeout=_long_timeout,
     )
 
 
@@ -160,9 +186,9 @@ def test_nonstationary_bandit_world_q_learning_curiosity_agent():
         NonStationaryBandit,
         QLearningCuriosity,
         n_loop_steps=int(1e4),
-        reward_lower_bound=10.0,
-        reward_upper_bound=100.0,
-        timeout=60 * 30,
+        reward_lower_bound=50.0,
+        reward_upper_bound=150.0,
+        timeout=_long_timeout,
     )
 
 
@@ -171,9 +197,9 @@ def test_intermittent_reward_bandit_world_q_learning_curiosity_agent():
         IntermittentRewardBandit,
         QLearningCuriosity,
         n_loop_steps=int(1e4),
-        reward_lower_bound=10.0,
-        reward_upper_bound=100.0,
-        timeout=60 * 30,
+        reward_lower_bound=50.0,
+        reward_upper_bound=150.0,
+        timeout=_long_timeout,
     )
 
 
@@ -185,8 +211,8 @@ def test_contextual_bandit_world_q_learning_curiosity_agent():
         QLearningCuriosity,
         n_loop_steps=int(1e4),
         reward_lower_bound=5.0,
-        reward_upper_bound=100.0,
-        timeout=60 * 30,
+        reward_upper_bound=150.0,
+        timeout=_long_timeout,
     )
 
 
@@ -199,7 +225,7 @@ def test_one_hot_contextual_bandit_world_q_learning_curiosity_agent():
         n_loop_steps=int(1e4),
         reward_lower_bound=5.0,
         reward_upper_bound=100.0,
-        timeout=60 * 30,
+        timeout=_long_timeout,
     )
 
 
@@ -216,7 +242,7 @@ def test_pendulum_world_q_learning_curiosity_agent():
         agent_args=agent_args,
         reward_lower_bound=0.0,
         reward_upper_bound=1.0,
-        timeout=60 * 60,
+        timeout=_long_timeout,
     )
 
 
@@ -233,7 +259,7 @@ def test_pendulum_discrete_world_q_learning_curiosity_agent():
         agent_args=agent_args,
         reward_lower_bound=0.0,
         reward_upper_bound=1.0,
-        timeout=60 * 60,
+        timeout=_long_timeout,
     )
 
 

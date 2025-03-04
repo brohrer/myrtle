@@ -19,7 +19,6 @@ const radius = canvas.width / 4;
 let redraw = true;
 
 let msg = '';
-let reward = 0.0;
 let angle = 0.0;
 let velocity = 0.0;
 let step = 0;
@@ -44,7 +43,6 @@ function render() {
   let yText = canvas.width * 0.94;
   let xText = canvas.width / 4;
   ctx.font = "20px Courier New";
-  ctx.fillText(`reward     ${reward.toFixed(3)}`, xText, yText);
   ctx.fillText(`angle      ${angle.toFixed(2)}`, xText, yText + textYOffset * 1);
   if (velocity < 0){
     ctx.fillText(
@@ -71,22 +69,17 @@ socket.onmessage = (event) => {
     redraw = true;
     msg = obj.message;
     let values = JSON.parse(msg);
-    let sensor_array = values.sensors;
+    angle = values.position;
+    velocity = values.velocity;
     step = values.loop_step;
     episode = values.episode;
-    // TODO: sum all rewards
-    reward = values.rewards[0];
-    //i_sensor = sensor_array.indexOf(1.0);
-    //position = i_sensor * 10.0;
-    angle = sensor_array[0];
-    velocity = sensor_array[1];
   };
 };
 
 // Main APP loop
 function loop() {
   try {
-    socket.send('{"action": "get", "topic": "world_step"}');
+    socket.send('{"action": "get", "topic": "pendulum_state"}');
   }
   catch(InvalidStateError) {
     console.log("InvalidStateError caught");

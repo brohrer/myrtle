@@ -3,6 +3,8 @@ from myrtle.agents.base_agent import BaseAgent
 
 
 class ValueAvgCuriosity(BaseAgent):
+    name = "Q-Averages with Curiosity"
+
     def __init__(
         self,
         n_sensors=None,
@@ -11,7 +13,6 @@ class ValueAvgCuriosity(BaseAgent):
         action_threshold=0.5,
         curiosity_scale=1.0,
     ):
-        self.name = "Q-Averages with Curiosity"
         self.init_common(
             n_sensors=n_sensors,
             n_actions=n_actions,

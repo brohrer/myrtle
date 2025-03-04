@@ -1,6 +1,6 @@
 [project]
 name = "myrtle"
-version = "0.7.2"
+version = "0.7.3"
 authors = [
   { name="Brandon Rohrer", email="brohrer@gmail.com" },
 ]
@@ -48,6 +48,11 @@ include = [
 exclude = [
   "*.dep",
   "archive"
+]
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::pytest.PytestUnhandledThreadExceptionWarning",
 ]
 
 [tool.ruff]

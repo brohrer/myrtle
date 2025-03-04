@@ -1,5 +1,4 @@
-import dsmq.client
-import dsmq.server
+from importlib.metadata import version
 import json
 import multiprocessing as mp
 import os
@@ -7,6 +6,9 @@ import sqlite3
 from threading import Thread
 import time
 
+import dsmq.client
+import dsmq.server
+import myrtle
 from myrtle.agents import base_agent
 from myrtle.config import log_directory, monitor_host, monitor_port, mq_host, mq_port
 from myrtle.monitors import server as monitor_server
@@ -44,6 +46,11 @@ def run(
     If None, then there is no timeout.
 
     """
+    print()
+    print(f"Myrtle workbench version {version('myrtle')}")
+    print(f"  World: {World.name}")
+    print(f"  Agent: {Agent.name}")
+    print()
     control_pacemaker = Pacemaker(_health_check_frequency)
 
     # If a prior run crashed, it can leave a file that slows down
@@ -58,10 +65,8 @@ def run(
     except FileNotFoundError:
         pass
 
-    print()
     print("Follow this run at")
     print(f"http://{monitor_host}:{monitor_port}/bench.html")
-    print()
 
     # Kick off the message queue process
     p_mq_server = mp.Process(
@@ -71,8 +76,8 @@ def run(
     p_mq_server.start()
 
     # Kick off the web server that shares monitoring pages
-    t_monitor = Thread(target=monitor_server.serve)
-    t_monitor.start()
+    p_monitor = mp.Process(target=monitor_server.serve)
+    p_monitor.start()
 
     time.sleep(_warmup_delay)
 
@@ -145,15 +150,18 @@ def run(
             if verbose:
                 print("    logging didn't shutdown cleanly")
             exitcode = 1
+
     monitor_server.shutdown()
     p_agent.join(_shutdown_timeout)
     p_world.join(_shutdown_timeout)
 
     # Clean up any processes that might accidentally be still running.
-    if t_monitor.is_alive():
+    # if t_monitor.is_alive():
+    if p_monitor.is_alive():
         if verbose:
             print("    monitor webserver didn't shutdown cleanly")
         exitcode = 1
+        p_monitor.kill()
 
     if p_world.is_alive():
         if verbose:
@@ -170,6 +178,15 @@ def run(
     # Shutdown the mq server last
     mq_client.shutdown_server()
     mq_client.close()
+
+    # If there are external connections to the mq server, like one of the
+    # monitors, they won't allow it to shutdown gently.
+    # When that happens, do this hard shutdiwn instead.
+    # It's still considered healthy behavior and gives and exitcode of 0.
+    if p_mq_server.is_alive():
+        if verbose:
+            print("    Doing a hard shutdown on mq server")
+        p_mq_server.kill()
 
     # If clients crashed or haven't closed down cleanly,
     # they  can leave a file that slows down
