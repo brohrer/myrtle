@@ -4,6 +4,8 @@ from myrtle.worlds.base_world import BaseWorld
 from myrtle.config import monitor_host, monitor_port
 from myrtle.worlds.tools.ring_buffer import RingBuffer
 
+_default_world_steps_per_loop_step = 8
+
 
 class Pendulum(BaseWorld):
     """
@@ -27,6 +29,7 @@ class Pendulum(BaseWorld):
         Negative actions are clockwise torque.
         All torques are in Newton-meters.
     """
+
     name = "Pendulum"
 
     def __init__(
@@ -34,9 +37,13 @@ class Pendulum(BaseWorld):
         n_loop_steps=1000,
         n_episodes=1,
         loop_steps_per_second=4,
-        world_steps_per_second=64,
+        world_steps_per_second=None,
         speedup=8,
     ):
+        if world_steps_per_second is None:
+            world_steps_per_second = (
+                loop_steps_per_second * _default_world_steps_per_loop_step
+            )
         self.init_common(
             n_loop_steps=n_loop_steps,
             n_episodes=n_episodes,
@@ -50,7 +57,8 @@ class Pendulum(BaseWorld):
         print()
 
         self.reset()
-        self.action_scale = 8 * np.array(
+        # self.action_scale = 8 * np.array(
+        self.action_scale = 4 * np.array(
             [
                 -1.0,
                 -0.75,

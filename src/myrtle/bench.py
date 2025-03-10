@@ -1,16 +1,22 @@
 from importlib.metadata import version
 import json
 import multiprocessing as mp
-import os
 import sqlite3
 from threading import Thread
 import time
 
 import dsmq.client
 import dsmq.server
-import myrtle
 from myrtle.agents import base_agent
-from myrtle.config import log_directory, monitor_host, monitor_port, mq_host, mq_port
+from myrtle.config import (
+    log_directory,
+    monitor_host,
+    monitor_port,
+    mq_loop_host,
+    mq_loop_port,
+    mq_host,
+    mq_port,
+)
 from myrtle.monitors import server as monitor_server
 from myrtle.worlds import base_world
 from pacemaker.pacemaker import Pacemaker
@@ -53,25 +59,19 @@ def run(
     print()
     control_pacemaker = Pacemaker(_health_check_frequency)
 
-    # If a prior run crashed, it can leave a file that slows down
-    # dsmq by encouraging to read/write to disk.
-    try:
-        os.remove("file::memory:?cache=shared")
-    except FileNotFoundError:
-        pass
-
-    try:
-        os.remove("file::memory:?cache=shared-journal")
-    except FileNotFoundError:
-        pass
-
     print("Follow this run at")
     print(f"http://{monitor_host}:{monitor_port}/bench.html")
 
     # Kick off the message queue process
+    p_mq_loop_server = mp.Process(
+        target=dsmq.server.serve,
+        args=(mq_loop_host, mq_loop_port, "loop"),
+    )
+    p_mq_loop_server.start()
+
     p_mq_server = mp.Process(
         target=dsmq.server.serve,
-        args=(mq_host, mq_port),
+        args=(mq_host, mq_port, _db_name_default),
     )
     p_mq_server.start()
 
@@ -111,7 +111,8 @@ def run(
 
     # Keep the workbench alive until it's time to close it down.
     # Monitor a "control" topic for a signal to stop everything.
-    mq_client = dsmq.client.connect(mq_host, mq_port)
+    mq_loop_control_client = dsmq.client.connect(mq_loop_host, mq_loop_port)
+    mq_control_client = dsmq.client.connect(mq_host, mq_port)
     run_start_time = time.time()
     while True:
         control_pacemaker.beat()
@@ -119,7 +120,7 @@ def run(
         # Check whether a shutdown message has been sent.
         # Assume that there will not be high volume on the "control" topic
         # and just check this once.
-        msg = mq_client.get("control")
+        msg = mq_loop_control_client.get("control")
         if msg is None:
             if verbose:
                 print("dsmq server connection terminated unexpectedly.")
@@ -135,7 +136,7 @@ def run(
             pass
 
         if timeout is not None and time.time() - run_start_time > timeout:
-            mq_client.put("control", "terminated")
+            mq_loop_control_client.put("control", "terminated")
             if verbose:
                 print(f"==== workbench run timed out at {timeout} sec ====")
             break
@@ -175,26 +176,26 @@ def run(
         exitcode = 1
         p_agent.kill()
 
-    # Shutdown the mq server last
-    mq_client.shutdown_server()
-    mq_client.close()
+    # Shutdown the mq servers last
+    mq_loop_control_client.shutdown_server()
+    mq_loop_control_client.close()
+
+    mq_control_client.shutdown_server()
+    mq_control_client.close()
 
     # If there are external connections to the mq server, like one of the
     # monitors, they won't allow it to shutdown gently.
     # When that happens, do this hard shutdiwn instead.
     # It's still considered healthy behavior and gives and exitcode of 0.
+    if p_mq_loop_server.is_alive():
+        if verbose:
+            print("    Doing a hard shutdown on loop mq server")
+        p_mq_loop_server.kill()
+
     if p_mq_server.is_alive():
         if verbose:
             print("    Doing a hard shutdown on mq server")
         p_mq_server.kill()
-
-    # If clients crashed or haven't closed down cleanly,
-    # they  can leave a file that slows down
-    # dsmq by encouraging to read/write to disk.
-    try:
-        os.remove("file::memory:?cache=shared")
-    except FileNotFoundError:
-        pass
 
     return exitcode
 
@@ -226,14 +227,14 @@ def _reward_logging(dbname, agent, world, verbose):
     run_timestamp = time.time()
     logging_pacemaker = Pacemaker(_logging_frequency)
 
-    logging_mq_client = dsmq.client.connect(mq_host, mq_port)
+    mq_logging_client = dsmq.client.connect(mq_host, mq_port)
     while True:
         logging_pacemaker.beat()
 
         # Check whether a shutdown message has been sent.
         # Assume that there will not be high volume on the "control" topic
         # and just check this once.
-        msg = logging_mq_client.get("control")
+        msg = mq_logging_client.get("control")
         if msg is None:
             if verbose:
                 print("dsmq server connection terminated unexpectedly.")
@@ -247,7 +248,7 @@ def _reward_logging(dbname, agent, world, verbose):
             pass
 
         # Check whether there is new reward value reported.
-        msg_str = logging_mq_client.get("world_step")
+        msg_str = mq_logging_client.get("world_step")
         if msg_str is None:
             if verbose:
                 print("dsmq server connection terminated unexpectedly.")
@@ -280,7 +281,7 @@ def _reward_logging(dbname, agent, world, verbose):
         logger.info(log_data)
 
     # Gracefully close down logger and mq_client
-    logging_mq_client.close()
+    mq_logging_client.close()
     logger.close()
 
 

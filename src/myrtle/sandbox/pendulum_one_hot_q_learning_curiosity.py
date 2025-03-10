@@ -12,14 +12,18 @@ from myrtle.worlds.pendulum_discrete import PendulumDiscrete
 discount_factor = 0.5
 learning_rate = 0.1
 
-n_loop_steps = 1e8
+n_loop_steps = 1e10
 n_episodes = 1
 loops_per_second = 8
-speedup = 8
+speedup = 4
 
 db_name = f"q_curiosity_pendulum_{int(time.time())}"
 
 # Try
+
+# self.action_scale = 4 * np.array(  speedup = 4
+# self.action_scale = 2 * np.array(
+# self.action_scale = 4 * np.array(  # was 8
 # discount_factor: 0.5, learning_rate:0.1, loops_per_second: 8, speedup_8
 
 def main():
@@ -35,6 +39,7 @@ def main():
             "n_loop_steps": n_loop_steps,
             "n_episodes": n_episodes,
             "loop_steps_per_second": loops_per_second,
+            # "world_steps_per_second": world_steps_per_second,
             "speedup": speedup,
         },
         agent_args={

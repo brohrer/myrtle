@@ -6,10 +6,14 @@ import json
 import time
 import numpy as np
 import dsmq.client
-from myrtle.config import mq_host, mq_port
+from myrtle.config import mq_loop_host, mq_loop_port, mq_host, mq_port
 
 # How long to wait in between attempts to read from the message queue.
-_polling_delay = 0.01  # seconds
+# For now this is hard coded.
+# Less delay than this starts to bog down the mq server.
+# More delay than this can result in a performance hit--a slight
+# latency increase in the world -> agent communication.
+_polling_delay = 0.002  # seconds
 
 
 class BaseAgent:
@@ -44,8 +48,12 @@ class BaseAgent:
 
     def initialize_mq(self):
         if not self.mq_initialized:
-            # Initialize message queue socket.
+            # Initialize loop-specific message queue client.
+            self.mq_loop = dsmq.client.connect(mq_loop_host, mq_loop_port)
+
+            # Initialize general purpose message queue client.
             self.mq = dsmq.client.connect(mq_host, mq_port)
+
             self.mq_initialized = True
 
     def run(self):
@@ -90,7 +98,7 @@ class BaseAgent:
     def read_world_step(self):
         # It's possible that there may be no sensor information available.
         # If not, just skip to the next iteration of the loop.
-        response = self.mq.get("world_step")
+        response = self.mq_loop.get("world_step")
         if response == "":
             return False
 
@@ -98,7 +106,7 @@ class BaseAgent:
         # information. If there is, skip to the latest batch.
         while response != "":
             msg_str = response
-            response = self.mq.get("world_step")
+            response = self.mq_loop.get("world_step")
 
         msg = json.loads(msg_str)
         try:
@@ -121,12 +129,13 @@ class BaseAgent:
                 "timestamp": time.time(),
             }
         )
+        self.mq_loop.put("agent_step", msg)
         self.mq.put("agent_step", msg)
 
     def control_check(self):
         episode_complete = False
         run_complete = False
-        msg = self.mq.get("control")
+        msg = self.mq_loop.get("control")
         if msg != "":
             # If this episode is over, begin the next one.
             if msg == "truncated":
@@ -137,7 +146,12 @@ class BaseAgent:
         return episode_complete, run_complete
 
     def close(self):
-        # If self.mq has been initialized, close it down.
+        # If mq clients have been initialized, close them down.
+        try:
+            self.mq_loop.close()
+        except AttributeError:
+            pass
+
         try:
             self.mq.close()
         except AttributeError:

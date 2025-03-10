@@ -10,6 +10,7 @@ class PendulumDiscreteOneHot(Pendulum):
     velocity. The total number of states is the number of possible
     position bins multiplied by the number of possible velocity bins.
     """
+
     name = "Discrete Valued, One-Hot Pendulum"
 
     def reset_sensors(self):

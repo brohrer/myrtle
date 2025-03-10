@@ -13,6 +13,7 @@ class OneHotContextualBandit(BaseWorld):
     This world tests an agent's ability to use sensor information to determine
     which action to take.
     """
+
     name = "One-hot contextual bandit"
 
     def __init__(

@@ -4,6 +4,7 @@ from myrtle.agents.base_agent import BaseAgent
 
 class RandomMultiAction(BaseAgent):
     name = "Random Multi-Action"
+
     def __init__(
         self,
         n_sensors=None,

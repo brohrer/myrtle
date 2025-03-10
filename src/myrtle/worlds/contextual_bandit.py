@@ -2,7 +2,6 @@ import numpy as np
 from myrtle.worlds.base_world import BaseWorld
 
 
-
 class ContextualBandit(BaseWorld):
     """
     A multi-armed bandit, except that at each time step the order of the
@@ -11,6 +10,7 @@ class ContextualBandit(BaseWorld):
     This world tests an agent's ability to use sensor information to determine
     which action to take.
     """
+
     name = "Contextual bandit"
 
     def __init__(

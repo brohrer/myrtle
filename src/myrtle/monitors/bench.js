@@ -46,6 +46,8 @@ let done = false;
 
 let msg = '';
 let reward = 0.0;
+let countMedReward = 0;
+let countSlowReward = 0;
 let totalMedReward = 0;
 let totalSlowReward = 0;
 let values = 0;
@@ -232,18 +234,25 @@ socket.onmessage = (event) => {
     fastRewardHistory.push(reward);
     fastRewardHistory.shift();
 
+    // Explicitly count loop steps processed in order to account for
+    // missed steps. This can happen, particularly when things
+    // are moving very fast.
+    countMedReward += 1;
+    countSlowReward += 1;
     totalMedReward += reward;
     totalSlowReward += reward;
 
     if (step % medHistoryBinSize == 0) {
-      medRewardHistory.push(totalMedReward / medHistoryBinSize);
+      medRewardHistory.push(totalMedReward / countMedReward);
       medRewardHistory.shift();
+      countMedReward = 0;
       totalMedReward = 0;
     }
 
     if (step % slowHistoryBinSize == 0) {
-      slowRewardHistory.push(totalSlowReward / slowHistoryBinSize);
+      slowRewardHistory.push(totalSlowReward / countSlowReward);
       slowRewardHistory.shift();
+      countSlowReward = 0;
       totalSlowReward = 0;
     }
   };

@@ -13,6 +13,7 @@ class FNCZiptieOneStep(BaseAgent):
 
     See https://brandonrohrer.com/cartographer
     """
+
     name = "Naive Cartographer with One-Step Lookahead and Curiosity"
 
     def __init__(
