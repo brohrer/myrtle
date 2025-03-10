@@ -32,6 +32,7 @@ class BaseWorld:
         loop_steps_per_second=10.0,
         world_steps_per_second=None,
         speedup=1.0,
+        verbose=True,
     ):
         """
         When extending `BaseWorld` to cover a new world, override `__init__()`
@@ -54,6 +55,7 @@ class BaseWorld:
             loop_steps_per_second=loop_steps_per_second,
             world_steps_per_second=world_steps_per_second,
             speedup=speedup,
+            verbose=verbose,
         )
 
         self.n_sensors = 13
@@ -67,10 +69,12 @@ class BaseWorld:
         loop_steps_per_second=_default_loop_steps_per_second,
         world_steps_per_second=None,
         speedup=_default_speedup,
+        verbose=None,
     ):
         """
         This boilerplate will need to be run when initializing most worlds.
         """
+        self.verbose = verbose
         self.n_loop_steps = int(n_loop_steps)
         self.n_episodes = int(n_episodes)
 
@@ -140,9 +144,11 @@ class BaseWorld:
 
             for i_loop_step in range(self.n_loop_steps):
                 self.i_loop_step = i_loop_step
-                print(
-                    f"episode {self.i_episode}  loop step {self.i_loop_step}", end="\r"
-                )
+                if self.verbose:
+                    print(
+                        f"episode {self.i_episode}  loop step {self.i_loop_step}",
+                        end="\r"
+                    )
 
                 for i_world_step in range(self.world_steps_per_loop_step):
                     self.i_world_step = i_world_step

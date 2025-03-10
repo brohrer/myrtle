@@ -9,18 +9,21 @@ from myrtle.worlds.pendulum_discrete import PendulumDiscrete
 
 
 # curiosity_scale = 1.0
+curiosity_scale = 0.1
 discount_factor = 0.5
 learning_rate = 0.1
 
 n_loop_steps = 1e10
 n_episodes = 1
 loops_per_second = 8
-speedup = 4
+speedup = 8
+verbose = False
 
 db_name = f"q_curiosity_pendulum_{int(time.time())}"
 
 # Try
-
+#
+# speedup = 8 , curiosity scale = 0.1
 # self.action_scale = 4 * np.array(  speedup = 4
 # self.action_scale = 2 * np.array(
 # self.action_scale = 4 * np.array(  # was 8
@@ -39,11 +42,11 @@ def main():
             "n_loop_steps": n_loop_steps,
             "n_episodes": n_episodes,
             "loop_steps_per_second": loops_per_second,
-            # "world_steps_per_second": world_steps_per_second,
             "speedup": speedup,
+            "verbose": verbose,
         },
         agent_args={
-            # "curiosity_scale": curiosity_scale,
+            "curiosity_scale": curiosity_scale,
             "discount_factor": discount_factor,
             "learning_rate": learning_rate,
         },

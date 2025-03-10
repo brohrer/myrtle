@@ -39,6 +39,7 @@ class Pendulum(BaseWorld):
         loop_steps_per_second=4,
         world_steps_per_second=None,
         speedup=8,
+        verbose=True,
     ):
         if world_steps_per_second is None:
             world_steps_per_second = (
@@ -50,6 +51,7 @@ class Pendulum(BaseWorld):
             loop_steps_per_second=loop_steps_per_second,
             world_steps_per_second=world_steps_per_second,
             speedup=speedup,
+            verbose=verbose,
         )
         print()
         print("Watch the pendulum at")

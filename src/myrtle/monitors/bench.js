@@ -6,20 +6,29 @@ import * as num from './num.js';
 Tweakable values
 */
 // Bounds for the reward plots
+
+const chartHeight = 0.12;
+const chartSpacing = 0.09;
+
 const fastLeftBorderFrac = 0.125;
 const fastRightBorderFrac = 0.75;
-const fastBottomBorderFrac = 0.28;
-const fastTopBorderFrac = 0.13;
+const fastBottomBorderFrac = chartSpacing + chartHeight;
+const fastTopBorderFrac = chartSpacing;
 
 const medLeftBorderFrac = 0.125;
 const medRightBorderFrac = 0.75;
-const medBottomBorderFrac = 0.55;
-const medTopBorderFrac = 0.40;
+const medBottomBorderFrac = 2 * chartSpacing + 2 * chartHeight;
+const medTopBorderFrac = 2 * chartSpacing + 1 * chartHeight;
 
 const slowLeftBorderFrac = 0.125;
 const slowRightBorderFrac = 0.75;
-const slowBottomBorderFrac = 0.83;
-const slowTopBorderFrac = 0.68;
+const slowBottomBorderFrac = 3 * chartSpacing + 3 * chartHeight;
+const slowTopBorderFrac = 3 * chartSpacing + 2 * chartHeight;
+
+const glacialLeftBorderFrac = 0.125;
+const glacialRightBorderFrac = 0.75;
+const glacialBottomBorderFrac = 4 * chartSpacing + 4 * chartHeight;
+const glacialTopBorderFrac = 4 * chartSpacing + 3 * chartHeight;
 
 const pathColor = 'CadetBlue';
 const textColor = 'CadetBlue';
@@ -38,6 +47,8 @@ const medHistoryLength = 200;
 const medHistoryBinSize = 20;
 const slowHistoryLength = 200;
 const slowHistoryBinSize = 500;
+const glacialHistoryLength = 200;
+const glacialHistoryBinSize = 10000;
 
 /*
 Globals
@@ -48,8 +59,10 @@ let msg = '';
 let reward = 0.0;
 let countMedReward = 0;
 let countSlowReward = 0;
+let countGlacialReward = 0;
 let totalMedReward = 0;
 let totalSlowReward = 0;
+let totalGlacialReward = 0;
 let values = 0;
 let step = 0;
 let episode = 0;
@@ -64,6 +77,10 @@ let medLoopStep = num.intervalSpacedArray(
 let slowRewardHistory = num.zeros(slowHistoryLength);
 let slowLoopStep = num.intervalSpacedArray(
   -1 * slowHistoryLength * slowHistoryBinSize, 0, slowHistoryBinSize, true);
+
+let glacialRewardHistory = num.zeros(glacialHistoryLength);
+let glacialLoopStep = num.intervalSpacedArray(
+  -1 * glacialHistoryLength * glacialHistoryBinSize, 0, glacialHistoryBinSize, true);
 
 // Determines whether an update to the display is needed.
 // Refreshes to true every time a non-empty message is received.
@@ -136,8 +153,29 @@ let slowChart = new art.Chart(ctx, slowAxes);
 slowChart.color = pathColor;
 slowChart.minXTicks = minXTicks;
 slowChart.minYTicks = minYTicks;
-slowChart.xAxisLabelBody = xLabel;
+// slowChart.xAxisLabelBody = xLabel;
 // slowChart.yAxisLabelBody = yLabel;
+
+let glacialAxes = new art.Axes(
+  glacialLeftBorderFrac * canvas.width,
+  glacialRightBorderFrac * canvas.width,
+  glacialBottomBorderFrac * canvas.height,
+  glacialTopBorderFrac * canvas.height,
+);
+
+let glacialUpperBound = 0.0;
+let glacialLowerBound = 0.0;
+glacialAxes.leftValue = num.min(glacialLoopStep);
+glacialAxes.rightValue = num.max(glacialLoopStep);
+glacialAxes.bottomValue = num.min(glacialRewardHistory);
+glacialAxes.topValue = num.max(glacialRewardHistory);
+
+let glacialChart = new art.Chart(ctx, glacialAxes);
+glacialChart.color = pathColor;
+glacialChart.minXTicks = minXTicks;
+glacialChart.minYTicks = minYTicks;
+glacialChart.xAxisLabelBody = xLabel;
+// glacialChart.yAxisLabelBody = yLabel;
 
 /*    
 Establish connection and handle communication
@@ -170,6 +208,9 @@ function render() {
 
     slowUpperBound = fastUpperBound;
     slowAxes.topValue = slowUpperBound;
+
+    glacialUpperBound = fastUpperBound;
+    glacialAxes.topValue = glacialUpperBound;
   }
   if (fastLowerBound > minReward) {
     fastLowerBound = minReward;
@@ -180,11 +221,15 @@ function render() {
 
     slowLowerBound = fastLowerBound;
     slowAxes.bottomValue = slowLowerBound;
+
+    glacialLowerBound = fastLowerBound;
+    glacialAxes.bottomValue = glacialLowerBound;
   }
 
   fastChart.render() 
   medChart.render() 
   slowChart.render() 
+  glacialChart.render() 
 
   // Reward trace
   let fastRewardX = fastAxes.scaleX(fastLoopStep);
@@ -207,6 +252,13 @@ function render() {
   slowRewardPath.lineWidth = lineWidthBold;
   slowRewardPath.color = pathColor;
   slowRewardPath.draw();
+
+  let glacialRewardX = glacialAxes.scaleX(glacialLoopStep);
+  let glacialRewardY = glacialAxes.scaleY(glacialRewardHistory);
+  let glacialRewardPath = new art.Path(ctx, glacialRewardX, glacialRewardY);
+  glacialRewardPath.lineWidth = lineWidthBold;
+  glacialRewardPath.color = pathColor;
+  glacialRewardPath.draw();
 
   redraw = false;
 }
@@ -239,8 +291,10 @@ socket.onmessage = (event) => {
     // are moving very fast.
     countMedReward += 1;
     countSlowReward += 1;
+    countGlacialReward += 1;
     totalMedReward += reward;
     totalSlowReward += reward;
+    totalGlacialReward += reward;
 
     if (step % medHistoryBinSize == 0) {
       medRewardHistory.push(totalMedReward / countMedReward);
@@ -254,6 +308,13 @@ socket.onmessage = (event) => {
       slowRewardHistory.shift();
       countSlowReward = 0;
       totalSlowReward = 0;
+    }
+
+    if (step % glacialHistoryBinSize == 0) {
+      glacialRewardHistory.push(totalGlacialReward / countGlacialReward);
+      glacialRewardHistory.shift();
+      countGlacialReward = 0;
+      totalGlacialReward = 0;
     }
   };
 };
