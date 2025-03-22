@@ -60,7 +60,8 @@ class Pendulum(BaseWorld):
 
         self.reset()
         # self.action_scale = 8 * np.array(
-        self.action_scale = 4 * np.array(
+        # self.action_scale = 4 * np.array(
+        self.action_scale = 2 * np.array(
             [
                 -1.0,
                 -0.75,

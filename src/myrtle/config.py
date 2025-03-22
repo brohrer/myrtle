@@ -17,6 +17,7 @@ mq_loop_port = _config["mq_loop_port"]
 mq_host = _config["mq_host"]
 mq_port = _config["mq_port"]
 
+monitor_frame_rate = _config["monitor_frame_rate"]
 
 def write_config_js():
     """
@@ -45,5 +46,6 @@ def write_config_js():
             f"""export let mq_host = "{_config["mq_host"]}";
 export let mq_port = {_config["mq_port"]};
 export let monitor_host = "{_config["monitor_host"]}";
-export let monitor_port = {_config["monitor_port"]};"""
+export let monitor_port = {_config["monitor_port"]};
+export let monitorFrameRate = {_config["monitor_frame_rate"]};"""
         )

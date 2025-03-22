@@ -85,6 +85,8 @@ let glacialLoopStep = num.intervalSpacedArray(
 // Determines whether an update to the display is needed.
 // Refreshes to true every time a non-empty message is received.
 let redraw = true;
+let lastRenderTime = Date.now();
+let renderInterval = 1000 / config.monitorFrameRate;
 
 /*
 Initialize the display
@@ -325,19 +327,27 @@ socket.onclose = function (event) {
 };
 
 function loop() {
-  try {
-    socket.send('{"action": "get", "topic": "world_step"}');
-  }
-  catch(InvalidStateError) {
-    console.log("InvalidStateError caught");
-  }
+  let elapsed = Date.now() - lastRenderTime;
 
-  if (redraw) {
-    render();
-  }
-
-  //request next frame
   if (done == false) {
+    // if enough time has elapsed, draw the next frame
+    if (elapsed > renderInterval) {
+      try {
+        socket.send('{"action": "get", "topic": "world_step"}');
+      }
+      catch(InvalidStateError) {
+        console.log("InvalidStateError caught");
+      }
+
+      if (redraw) {
+        render();
+      }
+      // Get ready for next frame by setting then=now, but also adjust for your
+      // specified fpsInterval not being a multiple of RAF's interval (16.7ms)
+      //then = now - (elapsed % fpsInterval);
+      lastRenderTime = Date.now()
+    }
+    //request next frame
     requestAnimationFrame(loop);
   }
 };

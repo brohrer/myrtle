@@ -1,4 +1,5 @@
 import json
+import time
 import numpy as np
 import dsmq.client
 from pacemaker.pacemaker import Pacemaker
@@ -202,7 +203,9 @@ class BaseWorld:
         # If there are none, report an all-zeros action.
         self.actions = np.zeros(self.n_actions)
         while True:
+            start = time.time()
             agent_msg = self.mq_loop.get("agent_step")
+            # print(f"world read_agent get in {int(1e6 * (time.time() - start))}")
             if agent_msg == "":
                 break
             self.actions = np.array(json.loads(agent_msg)["actions"])
@@ -254,7 +257,10 @@ class BaseWorld:
         # Check whether there has been at "terminated" control message
         # issued from the workbench process.
         time_to_shutdown = False
+        start = time.time()
         msg = self.mq_loop.get("control")
+        # print(f"world read control get in {int(1e6 * (time.time() - start))}")
+
         if msg in ["terminated", "shutdown"]:
             time_to_shutdown = True
         return time_to_shutdown

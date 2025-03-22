@@ -98,7 +98,9 @@ class BaseAgent:
     def read_world_step(self):
         # It's possible that there may be no sensor information available.
         # If not, just skip to the next iteration of the loop.
+        start = time.time()
         response = self.mq_loop.get("world_step")
+        # print(f"agent read_world get in {int(1e6 * (time.time() - start))}")
         if response == "":
             return False
 
