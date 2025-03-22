@@ -318,13 +318,13 @@ socket.onmessage = (event) => {
       countGlacialReward = 0;
       totalGlacialReward = 0;
     }
-  };
-};
+  }
+}
 
 socket.onclose = function (event) {
   done = true;
   console.log('disconnected');
-};
+}
 
 function loop() {
   let elapsed = Date.now() - lastRenderTime;
@@ -350,4 +350,4 @@ function loop() {
     //request next frame
     requestAnimationFrame(loop);
   }
-};
+}

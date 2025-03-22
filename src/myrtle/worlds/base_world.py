@@ -3,7 +3,7 @@ import time
 import numpy as np
 import dsmq.client
 from pacemaker.pacemaker import Pacemaker
-from myrtle.config import mq_loop_host, mq_loop_port, mq_host, mq_port
+from myrtle.config import mq_host, mq_port
 
 _default_n_loop_steps = 101
 _default_n_episodes = 3
@@ -112,18 +112,13 @@ class BaseWorld:
         self.pm = Pacemaker(self.world_steps_per_second * speedup)
 
         # Initialize the mq as part of `run()` because it allows
-        # process "spawn" method process foring to work, allowing
+        # process "spawn" method process forking to work, allowing
         # this code to run on macOS in addition to Linux.
         self.mq_initialized = False
 
     def initialize_mq(self):
         if not self.mq_initialized:
-            # Initialize loop-specific message queue client.
-            self.mq_loop = dsmq.client.connect(mq_loop_host, mq_loop_port)
-
-            # Initialize general purpose message queue client.
             self.mq = dsmq.client.connect(mq_host, mq_port)
-
             self.mq_initialized = True
 
     def run(self):
@@ -148,7 +143,7 @@ class BaseWorld:
                 if self.verbose:
                     print(
                         f"episode {self.i_episode}  loop step {self.i_loop_step}",
-                        end="\r"
+                        end="\r",
                     )
 
                 for i_world_step in range(self.world_steps_per_loop_step):
@@ -162,11 +157,17 @@ class BaseWorld:
                     # an agent taking non-negligible wall clock time to execute.
                     # There's more detail here:
                     # https://www.brandonrohrer.com/rl_noninteger_delay.html
+                    import time
+                    start = time.time()
                     self.read_agent_step()
+                    print(f"                      world read  {int(1e6 * (time.time() - start))}")
                     self.step_world()
 
                 self.sense()
+                import time
+                start = time.time()
                 self.write_world_step()
+                print(f"                                                                   world write  {int(1e6 * (time.time() - start))}")
                 time_to_shutdown = self.shutdown_check()
                 if time_to_shutdown:
                     break
@@ -174,11 +175,9 @@ class BaseWorld:
             if time_to_shutdown:
                 break
             # Get ready to start the next episode
-            self.mq_loop.put("control", "truncated")
             self.mq.put("control", "truncated")
 
         # Wrap up the run
-        self.mq_loop.put("control", "terminated")
         self.mq.put("control", "terminated")
         self.close()
 
@@ -202,13 +201,12 @@ class BaseWorld:
         # If there are multiple, report the last and ignore the others.
         # If there are none, report an all-zeros action.
         self.actions = np.zeros(self.n_actions)
-        while True:
-            start = time.time()
-            agent_msg = self.mq_loop.get("agent_step")
-            # print(f"world read_agent get in {int(1e6 * (time.time() - start))}")
-            if agent_msg == "":
-                break
-            self.actions = np.array(json.loads(agent_msg)["actions"])
+
+        agent_msg = self.mq.get_latest("agent_step")
+        print("world read", agent_msg)
+        if agent_msg == "":
+            return
+        self.actions = np.array(json.loads(agent_msg)["actions"])
 
     def step_world(self):
         """
@@ -250,27 +248,25 @@ class BaseWorld:
                 "rewards": self.rewards,
             }
         )
-        self.mq_loop.put("world_step", msg)
         self.mq.put("world_step", msg)
 
     def shutdown_check(self):
         # Check whether there has been at "terminated" control message
         # issued from the workbench process.
         time_to_shutdown = False
+<<<<<<< HEAD
         start = time.time()
         msg = self.mq_loop.get("control")
         # print(f"world read control get in {int(1e6 * (time.time() - start))}")
 
+=======
+        msg = self.mq.get("control")
+>>>>>>> 67abd259a5fc531273f8c7fb8c58f1f2ced1e013
         if msg in ["terminated", "shutdown"]:
             time_to_shutdown = True
         return time_to_shutdown
 
     def close(self):
-        # If mq clients have been initialized, close them down.
-        try:
-            self.mq_loop.close()
-        except AttributeError:
-            pass
         try:
             self.mq.close()
         except AttributeError:

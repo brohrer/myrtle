@@ -1,19 +1,18 @@
 """
 Chooses a single random action at each step.
 """
-
 import json
 import time
 import numpy as np
 import dsmq.client
-from myrtle.config import mq_loop_host, mq_loop_port, mq_host, mq_port
+from myrtle.config import mq_host, mq_port
 
 # How long to wait in between attempts to read from the message queue.
 # For now this is hard coded.
 # Less delay than this starts to bog down the mq server.
 # More delay than this can result in a performance hit--a slight
 # latency increase in the world -> agent communication.
-_polling_delay = 0.002  # seconds
+_polling_delay = 0.02  # seconds
 
 
 class BaseAgent:
@@ -42,18 +41,13 @@ class BaseAgent:
         self.n_rewards = n_rewards
 
         # Initialize the mq as part of `run()` because it allows
-        # process "spawn" method process foring to work, allowing
+        # process "spawn" method process forking to work, allowing
         # this code to run on macOS in addition to Linux.
         self.mq_initialized = False
 
     def initialize_mq(self):
         if not self.mq_initialized:
-            # Initialize loop-specific message queue client.
-            self.mq_loop = dsmq.client.connect(mq_loop_host, mq_loop_port)
-
-            # Initialize general purpose message queue client.
             self.mq = dsmq.client.connect(mq_host, mq_port)
-
             self.mq_initialized = True
 
     def run(self):
@@ -73,14 +67,19 @@ class BaseAgent:
                 # Polling loop, waiting for new inputs
                 while not (step_loop_complete or episode_complete or run_complete):
                     time.sleep(_polling_delay)
+
+                    start = time.time()
                     step_loop_complete = self.read_world_step()
+                    print(f"                        agent read  {int(1e6 * (time.time() - start))}")
+
                     # Each time through the polling loop, check
                     # whether the agent needs to be reset or terminated.
                     episode_complete, run_complete = self.control_check()
-                    self.write_agent_step()
 
                 self.choose_action()
+                start = time.time()
                 self.write_agent_step()
+                print(f"                                                     agent write  {int(1e6 * (time.time() - start))}")
 
         self.close()
 
@@ -98,17 +97,10 @@ class BaseAgent:
     def read_world_step(self):
         # It's possible that there may be no sensor information available.
         # If not, just skip to the next iteration of the loop.
-        start = time.time()
-        response = self.mq_loop.get("world_step")
-        # print(f"agent read_world get in {int(1e6 * (time.time() - start))}")
-        if response == "":
+        msg_str = self.mq.get_latest("world_step")
+        print("    agent read", msg_str)
+        if msg_str == "":
             return False
-
-        # It's possible that there may be more than one batch of sensor
-        # information. If there is, skip to the latest batch.
-        while response != "":
-            msg_str = response
-            response = self.mq_loop.get("world_step")
 
         msg = json.loads(msg_str)
         try:
@@ -131,13 +123,12 @@ class BaseAgent:
                 "timestamp": time.time(),
             }
         )
-        self.mq_loop.put("agent_step", msg)
         self.mq.put("agent_step", msg)
 
     def control_check(self):
         episode_complete = False
         run_complete = False
-        msg = self.mq_loop.get("control")
+        msg = self.mq.get("control")
         if msg != "":
             # If this episode is over, begin the next one.
             if msg == "truncated":
@@ -149,11 +140,6 @@ class BaseAgent:
 
     def close(self):
         # If mq clients have been initialized, close them down.
-        try:
-            self.mq_loop.close()
-        except AttributeError:
-            pass
-
         try:
             self.mq.close()
         except AttributeError:
