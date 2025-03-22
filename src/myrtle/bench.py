@@ -1,6 +1,14 @@
+import multiprocessing as mp
+# spawn is the default method on macOS,
+# starting in Python 3.14 it will be the default in Linux too.
+try:
+    mp.set_start_method('spawn')
+except RuntimeError:
+    # Will throw an error if the start method has alraedy been set.
+    pass
+
 from importlib.metadata import version
 import json
-import multiprocessing as mp
 import sqlite3
 from threading import Thread
 import time
@@ -12,8 +20,6 @@ from myrtle.config import (
     log_directory,
     monitor_host,
     monitor_port,
-    mq_loop_host,
-    mq_loop_port,
     mq_host,
     mq_port,
 )
@@ -63,15 +69,9 @@ def run(
     print(f"http://{monitor_host}:{monitor_port}/bench.html")
 
     # Kick off the message queue process
-    p_mq_loop_server = mp.Process(
-        target=dsmq.server.serve,
-        args=(mq_loop_host, mq_loop_port, "loop"),
-    )
-    p_mq_loop_server.start()
-
     p_mq_server = mp.Process(
         target=dsmq.server.serve,
-        args=(mq_host, mq_port, _db_name_default),
+        args=(mq_host, mq_port, _db_name_default, verbose)
     )
     p_mq_server.start()
 
@@ -111,7 +111,6 @@ def run(
 
     # Keep the workbench alive until it's time to close it down.
     # Monitor a "control" topic for a signal to stop everything.
-    mq_loop_control_client = dsmq.client.connect(mq_loop_host, mq_loop_port)
     mq_control_client = dsmq.client.connect(mq_host, mq_port)
     run_start_time = time.time()
     while True:
@@ -120,7 +119,7 @@ def run(
         # Check whether a shutdown message has been sent.
         # Assume that there will not be high volume on the "control" topic
         # and just check this once.
-        msg = mq_loop_control_client.get("control")
+        msg = mq_control_client.get("control")
         if msg is None:
             if verbose:
                 print("dsmq server connection terminated unexpectedly.")
@@ -136,7 +135,7 @@ def run(
             pass
 
         if timeout is not None and time.time() - run_start_time > timeout:
-            mq_loop_control_client.put("control", "terminated")
+            mq_control_client.put("control", "terminated")
             if verbose:
                 print(f"==== workbench run timed out at {timeout} sec ====")
             break
@@ -152,12 +151,11 @@ def run(
                 print("    logging didn't shutdown cleanly")
             exitcode = 1
 
-    monitor_server.shutdown()
+    # monitor_server.shutdown()
     p_agent.join(_shutdown_timeout)
     p_world.join(_shutdown_timeout)
 
     # Clean up any processes that might accidentally be still running.
-    # if t_monitor.is_alive():
     if p_monitor.is_alive():
         if verbose:
             print("    monitor webserver didn't shutdown cleanly")
@@ -176,10 +174,6 @@ def run(
         exitcode = 1
         p_agent.kill()
 
-    # Shutdown the mq servers last
-    mq_loop_control_client.shutdown_server()
-    mq_loop_control_client.close()
-
     mq_control_client.shutdown_server()
     mq_control_client.close()
 
@@ -187,11 +181,6 @@ def run(
     # monitors, they won't allow it to shutdown gently.
     # When that happens, do this hard shutdiwn instead.
     # It's still considered healthy behavior and gives and exitcode of 0.
-    if p_mq_loop_server.is_alive():
-        if verbose:
-            print("    Doing a hard shutdown on loop mq server")
-        p_mq_loop_server.kill()
-
     if p_mq_server.is_alive():
         if verbose:
             print("    Doing a hard shutdown on mq server")
@@ -248,7 +237,7 @@ def _reward_logging(dbname, agent, world, verbose):
             pass
 
         # Check whether there is new reward value reported.
-        msg_str = mq_logging_client.get("world_step")
+        msg_str = mq_logging_client.get_latest("world_step")
         if msg_str is None:
             if verbose:
                 print("dsmq server connection terminated unexpectedly.")

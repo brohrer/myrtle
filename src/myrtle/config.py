@@ -12,8 +12,6 @@ with open(os.path.join(top_dir, "config.toml"), "rb") as f:
 log_directory = _config["log_directory"]
 monitor_host = _config["monitor_host"]
 monitor_port = _config["monitor_port"]
-mq_loop_host = _config["mq_loop_host"]
-mq_loop_port = _config["mq_loop_port"]
 mq_host = _config["mq_host"]
 mq_port = _config["mq_port"]
 

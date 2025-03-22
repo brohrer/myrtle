@@ -17,8 +17,15 @@ class PendulumDiscrete(Pendulum):
         self.sensors = np.concatenate((positions, velocities))
 
     def step_sensors(self):
+        epsilon = 1e-4
         positions = np.zeros(self.n_positions)
-        i_position = int(self.n_positions * self.position / (2 * np.pi))
+        # Find the discrete position bin.
+        # Add a small epsilon to account for weird numerical case where
+        # self.position is elmost exactly 2 pi.
+        i_position = int(self.n_positions * self.position / (2 * np.pi + epsilon))
+        if i_position == self.n_positions:
+            i_position = 0
+            print(f"position is too big {self.position}")
         positions[i_position] = 1
 
         velocities = np.zeros(self.n_velocities)

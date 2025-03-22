@@ -79,7 +79,7 @@ socket.onmessage = (event) => {
 // Main APP loop
 function loop() {
   try {
-    socket.send('{"action": "get", "topic": "pendulum_state"}');
+    socket.send('{"action": "get_latest", "topic": "pendulum_state"}');
   }
   catch(InvalidStateError) {
     console.log("InvalidStateError caught");

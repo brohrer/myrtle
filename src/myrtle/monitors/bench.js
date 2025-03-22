@@ -316,17 +316,17 @@ socket.onmessage = (event) => {
       countGlacialReward = 0;
       totalGlacialReward = 0;
     }
-  };
-};
+  }
+}
 
 socket.onclose = function (event) {
   done = true;
   console.log('disconnected');
-};
+}
 
 function loop() {
   try {
-    socket.send('{"action": "get", "topic": "world_step"}');
+    socket.send('{"action": "get_latest", "topic": "world_step"}');
   }
   catch(InvalidStateError) {
     console.log("InvalidStateError caught");
@@ -340,4 +340,4 @@ function loop() {
   if (done == false) {
     requestAnimationFrame(loop);
   }
-};
+}

@@ -82,7 +82,7 @@ class Pendulum(BaseWorld):
 
         vis_updates_per_second = 60
         self.world_steps_per_vis_update = int(
-            self.world_steps_per_second / vis_updates_per_second
+            np.ceil(self.world_steps_per_second / vis_updates_per_second)
         )
         # self.reward_smoothing = 0.003
 
@@ -138,10 +138,11 @@ class Pendulum(BaseWorld):
 
         # Add the discrete-time approximation of Newtonian mechanics, F = ma
         self.velocity += torque * self.dt / self.inertia
-        self.position += self.velocity * self.dt
+        new_position = self.position + self.velocity * self.dt
+        # self.position += self.velocity * self.dt
 
         # Keep position in the range of [0, 2 pi)
-        self.position = np.mod(self.position, 2 * np.pi)
+        self.position = np.mod(new_position, 2 * np.pi)
 
         if self.i_world_step % self.world_steps_per_vis_update == 0:
             # self.display()
