@@ -1,4 +1,5 @@
 import json
+from queue import Empty
 import time
 import numpy as np
 import dsmq.client
@@ -31,9 +32,10 @@ class BaseWorld:
         n_loop_steps=100,
         n_episodes=1,
         loop_steps_per_second=10.0,
-        world_steps_per_second=None,
         speedup=1.0,
         verbose=True,
+        world_steps_per_second=None,
+        **kwargs,
     ):
         """
         When extending `BaseWorld` to cover a new world, override `__init__()`
@@ -57,6 +59,7 @@ class BaseWorld:
             world_steps_per_second=world_steps_per_second,
             speedup=speedup,
             verbose=verbose,
+            **kwargs,
         )
 
         self.n_sensors = 13
@@ -65,16 +68,23 @@ class BaseWorld:
 
     def init_common(
         self,
+        loop_steps_per_second=_default_loop_steps_per_second,
         n_loop_steps=_default_n_loop_steps,
         n_episodes=_default_n_episodes,
-        loop_steps_per_second=_default_loop_steps_per_second,
-        world_steps_per_second=None,
+        q_action = None,
+        q_reward = None,
+        q_sensor = None,
         speedup=_default_speedup,
         verbose=None,
+        world_steps_per_second=None,
     ):
         """
         This boilerplate will need to be run when initializing most worlds.
         """
+        self.q_action = q_action
+        self.q_reward = q_reward
+        self.q_sensor = q_sensor
+
         self.verbose = verbose
         self.n_loop_steps = int(n_loop_steps)
         self.n_episodes = int(n_episodes)
@@ -202,11 +212,16 @@ class BaseWorld:
         # If there are none, report an all-zeros action.
         self.actions = np.zeros(self.n_actions)
 
-        agent_msg = self.mq.get_latest("agent_step")
-        print("world read", agent_msg)
-        if agent_msg == "":
-            return
-        self.actions = np.array(json.loads(agent_msg)["actions"])
+        success = False
+        done = self.q_sensor.empty()
+        while not done:
+            try:
+                self.actions = self.q_action.get_nowait()
+                success = True
+            except Empty:
+                done = True
+        if success:
+            print(f"actions     {type(self.actions)}  {self.actions}")
 
     def step_world(self):
         """
@@ -240,6 +255,9 @@ class BaseWorld:
             self.rewards[self.i_action] = None
 
     def write_world_step(self):
+        self.q_reward.put(self.rewards)
+        self.q_sensor.put(self.sensors)
+
         msg = json.dumps(
             {
                 "loop_step": self.i_loop_step,
@@ -254,14 +272,7 @@ class BaseWorld:
         # Check whether there has been at "terminated" control message
         # issued from the workbench process.
         time_to_shutdown = False
-<<<<<<< HEAD
-        start = time.time()
-        msg = self.mq_loop.get("control")
-        # print(f"world read control get in {int(1e6 * (time.time() - start))}")
-
-=======
         msg = self.mq.get("control")
->>>>>>> 67abd259a5fc531273f8c7fb8c58f1f2ced1e013
         if msg in ["terminated", "shutdown"]:
             time_to_shutdown = True
         return time_to_shutdown

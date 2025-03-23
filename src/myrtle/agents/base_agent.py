@@ -2,6 +2,7 @@
 Chooses a single random action at each step.
 """
 import json
+from queue import Empty
 import time
 import numpy as np
 import dsmq.client
@@ -20,25 +21,39 @@ class BaseAgent:
 
     def __init__(
         self,
-        n_sensors=None,
-        n_actions=None,
-        n_rewards=None,
+        **kwargs,
+        # n_sensors=None,
+        # n_actions=None,
+        # n_rewards=None,
+        # q_action = None,
+        # q_reward = None,
+        # q_sensor = None,
     ):
-        self.init_common(
-            n_sensors=n_sensors,
-            n_actions=n_actions,
-            n_rewards=n_rewards,
-        )
+        self.init_common(**kwargs)
+        #     n_sensors=n_sensors,
+        #     n_actions=n_actions,
+        #     n_rewards=n_rewards,
+        #     q_action = None,
+        #     q_reward = None,
+        #     q_sensor = None,
+        # )
 
     def init_common(
         self,
         n_sensors=None,
         n_actions=None,
         n_rewards=None,
+        q_action = None,
+        q_reward = None,
+        q_sensor = None,
     ):
         self.n_sensors = n_sensors
         self.n_actions = n_actions
         self.n_rewards = n_rewards
+
+        self.q_action = q_action
+        self.q_reward = q_reward
+        self.q_sensor = q_sensor
 
         # Initialize the mq as part of `run()` because it allows
         # process "spawn" method process forking to work, allowing
@@ -97,24 +112,33 @@ class BaseAgent:
     def read_world_step(self):
         # It's possible that there may be no sensor information available.
         # If not, just skip to the next iteration of the loop.
-        msg_str = self.mq.get_latest("world_step")
-        print("    agent read", msg_str)
-        if msg_str == "":
-            return False
+        sensor_success = False
+        done = self.q_sensor.empty()
+        while not done:
+            try:
+                self.sensors = self.q_sensor.get_nowait()
+                sensor_success = True
+            except Empty:
+                done = True
+        if sensor_success:
+            print(f"sensors    {type(self.sensors)}  {self.sensors}")
 
-        msg = json.loads(msg_str)
-        try:
-            self.sensors = np.array(msg["sensors"])
-        except KeyError:
-            pass
-        try:
-            self.rewards = msg["rewards"]
-        except KeyError:
-            pass
+        reward_success = False
+        done = self.q_reward.empty()
+        while not done:
+            try:
+                self.rewards = self.q_reward.get_nowait()
+                reward_success = True
+            except Empty:
+                done = True
+        if reward_success:
+            print(f"rewards   {type(self.rewards)}      {self.rewards}")
 
-        return True
+        return sensor_success
 
     def write_agent_step(self):
+        self.q_action.put(self.actions)
+
         msg = json.dumps(
             {
                 "actions": self.actions.tolist(),

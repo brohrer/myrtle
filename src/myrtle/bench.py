@@ -81,6 +81,21 @@ def run(
 
     time.sleep(_warmup_delay)
 
+    # Queues are the dedicated channels for agent and world to communicate
+    # with each other, forming a tighter, faster, and more predictable loop
+    # than the dsmq message queue.
+    q_action = mp.Queue()
+    q_reward = mp.Queue()
+    q_sensor = mp.Queue()
+
+    world_args["q_action"] = q_action
+    world_args["q_reward"] = q_reward
+    world_args["q_sensor"] = q_sensor
+
+    agent_args["q_action"] = q_action
+    agent_args["q_reward"] = q_reward
+    agent_args["q_sensor"] = q_sensor
+
     world = World(**world_args)
     n_sensors = world.n_sensors
     n_actions = world.n_actions

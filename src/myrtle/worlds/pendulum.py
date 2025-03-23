@@ -40,6 +40,7 @@ class Pendulum(BaseWorld):
         world_steps_per_second=None,
         speedup=8,
         verbose=True,
+        **kwargs,
     ):
         if world_steps_per_second is None:
             world_steps_per_second = (
@@ -52,6 +53,7 @@ class Pendulum(BaseWorld):
             world_steps_per_second=world_steps_per_second,
             speedup=speedup,
             verbose=verbose,
+            **kwargs,
         )
         print()
         print("Watch the pendulum at")
