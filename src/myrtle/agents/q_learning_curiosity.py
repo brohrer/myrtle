@@ -7,21 +7,13 @@ class QLearningCuriosity(BaseAgent):
 
     def __init__(
         self,
-        # n_sensors=None,
-        # n_actions=None,
-        # n_rewards=None,
         action_threshold=0.5,
         curiosity_scale=1.0,
         discount_factor=0.5,
         learning_rate=0.01,
         **kwargs,
     ):
-        self.init_common(
-            # n_sensors=n_sensors,
-            # n_actions=n_actions,
-            # n_rewards=n_rewards,
-            **kwargs,
-        )
+        self.init_common(**kwargs)
 
         # A weight that affects how much influence curiosity has on the
         # agent's decision making process. It gets accumulated across all actions,

@@ -18,10 +18,7 @@ class FNCZiptieOneStep(BaseAgent):
 
     def __init__(
         self,
-        n_sensors=None,
         n_features=None,
-        n_actions=None,
-        n_rewards=None,
         action_threshold=0.5,
         curiosity_scale=1.0,
         exploitation_factor=1.0,
@@ -29,21 +26,16 @@ class FNCZiptieOneStep(BaseAgent):
         trace_decay_rate=0.3,
         reward_update_rate=0.1,
         ziptie_threshold=100.0,
-        sensor_q=None,
-        action_q=None,
         log_name=None,
         log_dir=".",
         logging_level="info",
+        **kwargs,
     ):
-        self.n_sensors = n_sensors
+        self.init_common(**kwargs)
         if n_features is None:
-            self.n_max_features = n_sensors
+            self.n_max_features = self.n_sensors
         else:
             self.n_max_features = n_features
-        self.n_actions = n_actions
-        self.n_rewards = n_rewards
-        self.sensor_q = sensor_q
-        self.action_q = action_q
 
         self.ziptie = Ziptie(n_cables=self.n_sensors, threshold=ziptie_threshold)
 

@@ -38,14 +38,14 @@ def main():
     # test_base_world_greedy_state_blind_eps_agent()
     # test_base_world_value_avg_curiosity_agent()
     # test_base_world_q_learning_eps_agent()
-    # test_base_world_q_learning_curiosity_agent()
+    test_base_world_q_learning_curiosity_agent()
     # test_stationary_bandit_world_q_learning_curiosity_agent()
     # test_nonstationary_bandit_world_q_learning_curiosity_agent()
     # test_intermittent_reward_bandit_world_q_learning_curiosity_agent()
     # test_contextual_bandit_world_q_learning_curiosity_agent()
     # test_one_hot_contextual_bandit_world_q_learning_curiosity_agent()
     # test_pendulum_discrete_world_q_learning_curiosity_agent()
-    test_pendulum_world_q_learning_curiosity_agent()
+    # test_pendulum_world_q_learning_curiosity_agent()
 
 
 def db_cleanup():
@@ -80,6 +80,7 @@ def run_world_with_agent(
             "n_loop_steps": n_loop_steps,
             "n_episodes": n_episodes,
             "loop_steps_per_second": loops_per_second,
+            "verbose": True,
         },
         agent_args=agent_args,
     )

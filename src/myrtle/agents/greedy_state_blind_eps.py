@@ -7,16 +7,10 @@ class GreedyStateBlindEpsilon(BaseAgent):
 
     def __init__(
         self,
-        n_sensors=None,
-        n_actions=None,
-        n_rewards=None,
         epsilon=0.1,
+        **kwargs,
     ):
-        self.init_common(
-            n_sensors=n_sensors,
-            n_actions=n_actions,
-            n_rewards=n_rewards,
-        )
+        self.init_common(**kwargs)
 
         self.epsilon = epsilon
 

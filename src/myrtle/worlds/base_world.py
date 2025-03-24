@@ -1,6 +1,4 @@
 import json
-from queue import Empty
-import time
 import numpy as np
 import dsmq.client
 from pacemaker.pacemaker import Pacemaker
@@ -71,12 +69,12 @@ class BaseWorld:
         loop_steps_per_second=_default_loop_steps_per_second,
         n_loop_steps=_default_n_loop_steps,
         n_episodes=_default_n_episodes,
-        q_action = None,
-        q_reward = None,
-        q_sensor = None,
         speedup=_default_speedup,
         verbose=None,
         world_steps_per_second=None,
+        q_action=None,
+        q_reward=None,
+        q_sensor=None,
     ):
         """
         This boilerplate will need to be run when initializing most worlds.
@@ -167,17 +165,15 @@ class BaseWorld:
                     # an agent taking non-negligible wall clock time to execute.
                     # There's more detail here:
                     # https://www.brandonrohrer.com/rl_noninteger_delay.html
-                    import time
-                    start = time.time()
+                    # start = time.time()
                     self.read_agent_step()
-                    print(f"                      world read  {int(1e6 * (time.time() - start))}")
+                    # print(f"                      world read  {int(1e6 * (time.time() - start))}")
                     self.step_world()
 
                 self.sense()
-                import time
-                start = time.time()
+                # start = time.time()
                 self.write_world_step()
-                print(f"                                                                   world write  {int(1e6 * (time.time() - start))}")
+                # print(f"                                                                   world write  {int(1e6 * (time.time() - start))}")
                 time_to_shutdown = self.shutdown_check()
                 if time_to_shutdown:
                     break
@@ -211,17 +207,8 @@ class BaseWorld:
         # If there are multiple, report the last and ignore the others.
         # If there are none, report an all-zeros action.
         self.actions = np.zeros(self.n_actions)
-
-        success = False
-        done = self.q_sensor.empty()
-        while not done:
-            try:
-                self.actions = self.q_action.get_nowait()
-                success = True
-            except Empty:
-                done = True
-        if success:
-            print(f"actions     {type(self.actions)}  {self.actions}")
+        while not self.q_action.empty():
+            self.actions = self.q_action.get_nowait()
 
     def step_world(self):
         """
@@ -282,3 +269,10 @@ class BaseWorld:
             self.mq.close()
         except AttributeError:
             pass
+
+        # Close down the Queues that the world feeds
+        self.q_reward.close()
+        self.q_sensor.close()
+
+        self.q_reward.cancel_join_thread()
+        self.q_sensor.cancel_join_thread()

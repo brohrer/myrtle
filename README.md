@@ -1,8 +1,9 @@
 # Myrtle
-A [real-time](#real-time) reinforcement learning benchmark framework that allows for
+A [real-time](#real-time) reinforcement learning workbench
+that helps you connect worlds with agents, allowing for
 [multiple and intermittent rewards](#multiple-and-intermittent-rewards).
 
-Myrtle connects a real-time environment with an agent via a message queue and runs them.
+Myrtle connects a real-time environment with an agent and runs them.
 
 - [Creating Worlds](#worlds)
 - [Creating Agents](#agents)

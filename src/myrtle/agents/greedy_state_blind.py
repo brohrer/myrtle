@@ -10,17 +10,8 @@ from myrtle.agents.base_agent import BaseAgent
 class GreedyStateBlind(BaseAgent):
     name = "Greedy State-Blind"
 
-    def __init__(
-        self,
-        n_sensors=None,
-        n_actions=None,
-        n_rewards=None,
-    ):
-        self.init_common(
-            n_sensors=n_sensors,
-            n_actions=n_actions,
-            n_rewards=n_rewards,
-        )
+    def __init__(self, **kwargs):
+        self.init_common(**kwargs)
 
     def reset(self):
         self.sensors = np.zeros(self.n_sensors)

@@ -17,6 +17,7 @@ mq_port = _config["mq_port"]
 
 monitor_frame_rate = _config["monitor_frame_rate"]
 
+
 def write_config_js():
     """
         Write a .js file containing the ip addresses and ports for

@@ -7,16 +7,10 @@ class RandomMultiAction(BaseAgent):
 
     def __init__(
         self,
-        n_sensors=None,
-        n_actions=None,
-        n_rewards=None,
         avg_actions=2.0,
+        **kwargs,
     ):
-        self.init_common(
-            n_sensors=n_sensors,
-            n_actions=n_actions,
-            n_rewards=n_rewards,
-        )
+        self.init_common(**kwargs)
 
         # Convert the average number of actions taken per step to a
         # probability of each action being selected individually.

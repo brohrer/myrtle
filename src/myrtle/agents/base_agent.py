@@ -1,8 +1,8 @@
 """
 Chooses a single random action at each step.
 """
+
 import json
-from queue import Empty
 import time
 import numpy as np
 import dsmq.client
@@ -13,39 +13,23 @@ from myrtle.config import mq_host, mq_port
 # Less delay than this starts to bog down the mq server.
 # More delay than this can result in a performance hit--a slight
 # latency increase in the world -> agent communication.
-_polling_delay = 0.02  # seconds
+_polling_delay = 0.01  # seconds
 
 
 class BaseAgent:
     name = "Base agent"
 
-    def __init__(
-        self,
-        **kwargs,
-        # n_sensors=None,
-        # n_actions=None,
-        # n_rewards=None,
-        # q_action = None,
-        # q_reward = None,
-        # q_sensor = None,
-    ):
+    def __init__(self, **kwargs):
         self.init_common(**kwargs)
-        #     n_sensors=n_sensors,
-        #     n_actions=n_actions,
-        #     n_rewards=n_rewards,
-        #     q_action = None,
-        #     q_reward = None,
-        #     q_sensor = None,
-        # )
 
     def init_common(
         self,
         n_sensors=None,
         n_actions=None,
         n_rewards=None,
-        q_action = None,
-        q_reward = None,
-        q_sensor = None,
+        q_action=None,
+        q_reward=None,
+        q_sensor=None,
     ):
         self.n_sensors = n_sensors
         self.n_actions = n_actions
@@ -83,18 +67,18 @@ class BaseAgent:
                 while not (step_loop_complete or episode_complete or run_complete):
                     time.sleep(_polling_delay)
 
-                    start = time.time()
+                    # start = time.time()
                     step_loop_complete = self.read_world_step()
-                    print(f"                        agent read  {int(1e6 * (time.time() - start))}")
+                    # print(f"                        agent read  {int(1e6 * (time.time() - start))}")
 
                     # Each time through the polling loop, check
                     # whether the agent needs to be reset or terminated.
                     episode_complete, run_complete = self.control_check()
 
                 self.choose_action()
-                start = time.time()
+                # start = time.time()
                 self.write_agent_step()
-                print(f"                                                     agent write  {int(1e6 * (time.time() - start))}")
+                # print(f"                                                     agent write  {int(1e6 * (time.time() - start))}")
 
         self.close()
 
@@ -113,26 +97,12 @@ class BaseAgent:
         # It's possible that there may be no sensor information available.
         # If not, just skip to the next iteration of the loop.
         sensor_success = False
-        done = self.q_sensor.empty()
-        while not done:
-            try:
-                self.sensors = self.q_sensor.get_nowait()
-                sensor_success = True
-            except Empty:
-                done = True
-        if sensor_success:
-            print(f"sensors    {type(self.sensors)}  {self.sensors}")
+        while not self.q_sensor.empty():
+            self.sensors = self.q_sensor.get_nowait()
+            sensor_success = True
 
-        reward_success = False
-        done = self.q_reward.empty()
-        while not done:
-            try:
-                self.rewards = self.q_reward.get_nowait()
-                reward_success = True
-            except Empty:
-                done = True
-        if reward_success:
-            print(f"rewards   {type(self.rewards)}      {self.rewards}")
+        while not self.q_reward.empty():
+            self.rewards = self.q_reward.get_nowait()
 
         return sensor_success
 
@@ -168,3 +138,7 @@ class BaseAgent:
             self.mq.close()
         except AttributeError:
             pass
+
+        # Close down the Queue that the agent feeds
+        self.q_action.close()
+        self.q_action.cancel_join_thread()

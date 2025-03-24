@@ -17,26 +17,18 @@ class FNCOneStepCuriosity(BaseAgent):
 
     def __init__(
         self,
-        n_sensors=None,
-        n_actions=None,
-        n_rewards=None,
         action_threshold=0.5,
         curiosity_scale=1.0,
         exploitation_factor=1.0,
         feature_decay_rate=0.35,
         trace_decay_rate=0.3,
         reward_update_rate=0.3,
-        sensor_q=None,
-        action_q=None,
         log_name=None,
         log_dir=".",
         logging_level="info",
+        **kwargs,
     ):
-        self.n_sensors = n_sensors
-        self.n_actions = n_actions
-        self.n_rewards = n_rewards
-        self.sensor_q = sensor_q
-        self.action_q = action_q
+        self.init_common(**kwargs)
 
         self.model = Model(
             n_sensors=self.n_sensors,

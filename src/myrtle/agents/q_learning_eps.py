@@ -7,19 +7,13 @@ class QLearningEpsilon(BaseAgent):
 
     def __init__(
         self,
-        n_sensors=None,
-        n_actions=None,
-        n_rewards=None,
         action_threshold=0.5,
         epsilon=0.2,
         discount_factor=0.5,
         learning_rate=0.01,
+        **kwargs,
     ):
-        self.init_common(
-            n_sensors=n_sensors,
-            n_actions=n_actions,
-            n_rewards=n_rewards,
-        )
+        self.init_common(**kwargs)
 
         # A parameter that affects how often the agent chooses to explore
         # random actions, rather than exploit (choose the best known action).

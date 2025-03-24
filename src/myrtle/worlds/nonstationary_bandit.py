@@ -10,11 +10,13 @@ class NonStationaryBandit(BaseWorld):
         n_loop_steps=1000,
         n_episodes=1,
         loop_steps_per_second=100,
+        **kwargs,
     ):
         self.init_common(
             n_loop_steps=n_loop_steps,
             n_episodes=n_episodes,
             loop_steps_per_second=loop_steps_per_second,
+            **kwargs,
         )
         self.n_sensors = 0
         self.n_actions = 5

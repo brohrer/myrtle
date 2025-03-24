@@ -1,3 +1,4 @@
+import multiprocessing as mp
 import pytest
 import numpy as np
 from myrtle.agents.greedy_state_blind_eps import GreedyStateBlindEpsilon
@@ -15,6 +16,9 @@ def initialize_agent():
         n_sensors=_n_sensors,
         n_actions=_n_actions,
         n_rewards=_n_rewards,
+        q_action=mp.Queue(),
+        q_reward=mp.Queue(),
+        q_sensor=mp.Queue(),
     )
 
     yield agent

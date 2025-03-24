@@ -30,6 +30,7 @@ def test_run_a():
             "n_episodes": 2,
             "loop_steps_per_second": 20,
         },
+        verbose=True,
     )
     assert exitcode == 0
 
@@ -203,4 +204,5 @@ def test_controlled_shutdown():
 
 
 if __name__ == "__main__":
-    test_controlled_shutdown()
+    test_run_a()
+    # test_controlled_shutdown()

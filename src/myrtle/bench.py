@@ -1,8 +1,9 @@
 import multiprocessing as mp
+
 # spawn is the default method on macOS,
 # starting in Python 3.14 it will be the default in Linux too.
 try:
-    mp.set_start_method('spawn')
+    mp.set_start_method("spawn")
 except RuntimeError:
     # Will throw an error if the start method has alraedy been set.
     pass
@@ -33,6 +34,7 @@ _logging_frequency = 100  # Hz
 _health_check_frequency = 10.0  # Hz
 _warmup_delay = 2.0  # seconds
 _shutdown_timeout = 1.0  # seconds
+_shutdown_wait = 0.1  # seconds
 
 
 def run(
@@ -70,8 +72,7 @@ def run(
 
     # Kick off the message queue process
     p_mq_server = mp.Process(
-        target=dsmq.server.serve,
-        args=(mq_host, mq_port, _db_name_default, verbose)
+        target=dsmq.server.serve, args=(mq_host, mq_port, _db_name_default, verbose)
     )
     p_mq_server.start()
 
@@ -87,14 +88,14 @@ def run(
     q_action = mp.Queue()
     q_reward = mp.Queue()
     q_sensor = mp.Queue()
+    q_args = {
+        "q_action": q_action,
+        "q_reward": q_reward,
+        "q_sensor": q_sensor,
+    }
 
-    world_args["q_action"] = q_action
-    world_args["q_reward"] = q_reward
-    world_args["q_sensor"] = q_sensor
-
-    agent_args["q_action"] = q_action
-    agent_args["q_reward"] = q_reward
-    agent_args["q_sensor"] = q_sensor
+    world_args = world_args | q_args
+    agent_args = agent_args | q_args
 
     world = World(**world_args)
     n_sensors = world.n_sensors
@@ -166,9 +167,11 @@ def run(
                 print("    logging didn't shutdown cleanly")
             exitcode = 1
 
-    # monitor_server.shutdown()
+    monitor_server.shutdown()
     p_agent.join(_shutdown_timeout)
     p_world.join(_shutdown_timeout)
+
+    time.sleep(_shutdown_wait)
 
     # Clean up any processes that might accidentally be still running.
     if p_monitor.is_alive():
