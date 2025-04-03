@@ -1,4 +1,5 @@
 import json
+import time
 import numpy as np
 import dsmq.client
 from pacemaker.pacemaker import Pacemaker
@@ -148,6 +149,11 @@ class BaseWorld:
 
             for i_loop_step in range(self.n_loop_steps):
                 self.i_loop_step = i_loop_step
+                # Initialize timestamps
+                self.receive_actions_timestamp = 0
+                self.sense_timestamp = 0
+                self.send_sensors_timestamp = 0
+
                 if self.verbose:
                     print(
                         f"episode {self.i_episode}  loop step {self.i_loop_step}",
@@ -165,15 +171,12 @@ class BaseWorld:
                     # an agent taking non-negligible wall clock time to execute.
                     # There's more detail here:
                     # https://www.brandonrohrer.com/rl_noninteger_delay.html
-                    # start = time.time()
                     self.read_agent_step()
-                    # print(f"                      world read  {int(1e6 * (time.time() - start))}")
                     self.step_world()
 
+                self.sense_timestamp - time.time()
                 self.sense()
-                # start = time.time()
                 self.write_world_step()
-                # print(f"                                                                   world write  {int(1e6 * (time.time() - start))}")
                 time_to_shutdown = self.shutdown_check()
                 if time_to_shutdown:
                     break
@@ -209,6 +212,7 @@ class BaseWorld:
         self.actions = np.zeros(self.n_actions)
         while not self.q_action.empty():
             self.actions = self.q_action.get_nowait()
+            self.receive_actions_timestamp = time.time()
 
     def step_world(self):
         """
@@ -245,12 +249,16 @@ class BaseWorld:
         self.q_reward.put(self.rewards)
         self.q_sensor.put(self.sensors)
 
+        self.send_sensors_timestamp = time.time()
+
         msg = json.dumps(
             {
                 "loop_step": self.i_loop_step,
                 "episode": self.i_episode,
                 "sensors": self.sensors.tolist(),
                 "rewards": self.rewards,
+                "ts_recv": int(1e6 * self.receive_actions_timestamp),
+                "ts_send": int(1e6 * self.send_sensors_timestamp),
             }
         )
         self.mq.put("world_step", msg)

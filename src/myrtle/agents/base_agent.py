@@ -13,7 +13,7 @@ from myrtle.config import mq_host, mq_port
 # Less delay than this starts to bog down the mq server.
 # More delay than this can result in a performance hit--a slight
 # latency increase in the world -> agent communication.
-_polling_delay = 0.01  # seconds
+_polling_delay = 0.005  # seconds
 
 
 class BaseAgent:
@@ -62,6 +62,8 @@ class BaseAgent:
             # world->agent->world step loop
             while not (episode_complete or run_complete):
                 self.i_step += 1
+                self.receive_sensors_timestamp = 0
+                self.send_actions_timestamp = 0
                 step_loop_complete = False
                 # Polling loop, waiting for new inputs
                 while not (step_loop_complete or episode_complete or run_complete):
@@ -100,6 +102,7 @@ class BaseAgent:
         while not self.q_sensor.empty():
             self.sensors = self.q_sensor.get_nowait()
             sensor_success = True
+            self.receive_sensors_timestamp = time.time()
 
         while not self.q_reward.empty():
             self.rewards = self.q_reward.get_nowait()
@@ -108,13 +111,15 @@ class BaseAgent:
 
     def write_agent_step(self):
         self.q_action.put(self.actions)
+        self.send_actions_timestamp = time.time()
 
         msg = json.dumps(
             {
-                "actions": self.actions.tolist(),
                 "step": self.i_step,
                 "episode": self.i_episode,
-                "timestamp": time.time(),
+                "actions": self.actions.tolist(),
+                "ts_recv": int(1e6 * self.receive_sensors_timestamp),
+                "ts_send": int(1e6 * self.send_actions_timestamp),
             }
         )
         self.mq.put("agent_step", msg)

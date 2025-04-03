@@ -30,7 +30,7 @@ from pacemaker.pacemaker import Pacemaker
 from sqlogging import logging
 
 _db_name_default = "bench"
-_logging_frequency = 100  # Hz
+_logging_frequency = 200  # Hz
 _health_check_frequency = 10.0  # Hz
 _warmup_delay = 2.0  # seconds
 _shutdown_timeout = 1.0  # seconds
@@ -60,15 +60,32 @@ def run(
     If None, then there is no timeout.
 
     """
-    print()
-    print(f"Myrtle workbench version {version('myrtle')}")
-    print(f"  World: {World.name}")
-    print(f"  Agent: {Agent.name}")
-    print()
+    print(f"""
+
+    Myrtle workbench version {version('myrtle')}
+      World: {World.name}
+      Agent: {Agent.name}
+
+    """)
+    if log_to_db:
+        print(f"""
+    A full history of the run is stored in {logging_db_name}.db
+    Check in on its progress with
+
+        uv run src/myrtle/reports/reward.py {logging_db_name}
+    and
+        uv run src/myrtle/reports/timing.py {logging_db_name}
+
+    You can find the report charts in the {log_directory} directory.
+        """)
+
     control_pacemaker = Pacemaker(_health_check_frequency)
 
-    print("Follow this run at")
-    print(f"http://{monitor_host}:{monitor_port}/bench.html")
+    print(f"""
+    Follow the reward trace in real time at
+        http://{monitor_host}:{monitor_port}/bench.html
+
+    """)
 
     # Kick off the message queue process
     p_mq_server = mp.Process(
@@ -222,16 +239,14 @@ def _reward_logging(dbname, agent, world, verbose):
             name=dbname,
             dir_name=log_directory,
             columns=[
+                "process",
                 "reward",
                 "step",
-                "step_timestamp",
                 "episode",
-                "run_timestamp",
-                "agentname",
-                "worldname",
+                "ts_recv",
+                "ts_send",
             ],
         )
-    run_timestamp = time.time()
     logging_pacemaker = Pacemaker(_logging_frequency)
 
     mq_logging_client = dsmq.client.connect(mq_host, mq_port)
@@ -254,8 +269,8 @@ def _reward_logging(dbname, agent, world, verbose):
         except KeyError:
             pass
 
-        # Check whether there is new reward value reported.
-        msg_str = mq_logging_client.get_latest("world_step")
+        # Check whether there is new world step and reward value reported.
+        msg_str = mq_logging_client.get("world_step")
         if msg_str is None:
             if verbose:
                 print("dsmq server connection terminated unexpectedly.")
@@ -273,17 +288,33 @@ def _reward_logging(dbname, agent, world, verbose):
             # Rewards not yet populated.
             pass
 
-        step = msg["loop_step"]
-        episode = msg["episode"]
 
         log_data = {
+            "process": "world",
             "reward": reward,
-            "step": step,
-            "step_timestamp": time.time(),
-            "episode": episode,
-            "run_timestamp": run_timestamp,
-            "agentname": agent.name,
-            "worldname": world.name,
+            "step": msg["loop_step"],
+            "episode": msg["episode"],
+            "ts_recv": msg["ts_recv"],
+            "ts_send": msg["ts_send"],
+        }
+        logger.info(log_data)
+
+        # Check whether there is new agent step reported.
+        msg_str = mq_logging_client.get("agent_step")
+        if msg_str is None:
+            if verbose:
+                print("dsmq server connection terminated unexpectedly.")
+            break
+        if msg_str == "":
+            continue
+        msg = json.loads(msg_str)
+
+        log_data = {
+            "process": "agent",
+            "step": msg["step"],
+            "episode": msg["episode"],
+            "ts_recv": msg["ts_recv"],
+            "ts_send": msg["ts_send"],
         }
         logger.info(log_data)
 

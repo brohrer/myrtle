@@ -23,7 +23,7 @@ class NonStationaryBandit(BaseWorld):
         self.n_rewards = 5
         self.steps_per_second = 100
 
-        self.time_step_switch = int(self.n_loop_steps / 2)
+        self.time_step_switch = int(self.n_loop_steps / 3)
 
         # The highest paying bandit is 2 with average payout of .4 * 280 = 112.
         # Others are 100 or less.

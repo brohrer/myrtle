@@ -28,9 +28,6 @@ class QLearningCuriosity(BaseAgent):
         # but just in case a world slips in fractional actions add a threshold.
         self.action_threshold = action_threshold
 
-        # How often to report progress
-        self.report_steps = int(1e4)
-
         # Store the value table as a dictionary.
         # Keys are sets of sensor readings.
         # Because we can't hash on Numpy arrays for the dict,
@@ -89,8 +86,10 @@ class QLearningCuriosity(BaseAgent):
         # There's a small amount of intrinsic reward associated with
         # satisfying curiosity.
         count = self.counts[self.sensors.tobytes()]
-        uncertainty = 1 / (count**2 + 1)
-        # uncertainty = 1 / (count + 1)
+        # uncertainty = 1 / (np.minimum(count, 1000) ** .5 + 1)
+        # uncertainty = 1 / (count ** .5 + 1)
+        # uncertainty = 1 / (count**2 + 1)
+        uncertainty = 1 / (count + 1)
         self.curiosities[self.sensors.tobytes()] = (
             self.curiosities[self.sensors.tobytes()]
             + uncertainty * self.curiosity_scale

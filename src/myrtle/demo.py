@@ -1,27 +1,27 @@
 import time
+from sqlogging import logging
 from myrtle import bench
 from myrtle.agents.q_learning_curiosity import QLearningCuriosity
 from myrtle.config import log_directory
 from myrtle.worlds.contextual_bandit import ContextualBandit
-from sqlogging import logging
 
 
 def run_demo():
+    db_name = f"demo_db_{int(time.time())}"
     print(
-        """
+        f"""
     Demo of Myrtle running Q-Learning with curiosity-driven exploration,
     learning a contextual bandit--a multi-armed bandit where sensor values
     indicate which one has the highest payout.
 
-    This demo runs for 20,000 steps,
-    at 100 steps per second--a little over 3 minutes.
+    This demo runs for 3,000 steps,
+    at 50 steps per second it takes about one minute.
     That's just enough time for it
     to settle in to good (close to optimal) behavior.
 
     """
     )
 
-    db_name = f"demo_db_{int(time.time())}"
     bench.run(
         QLearningCuriosity,
         ContextualBandit,
@@ -33,8 +33,9 @@ def run_demo():
             "learning_rate": 0.01,
         },
         world_args={
-            "n_loop_steps": 20000,
-            "loop_steps_per_second": 100,
+            "n_loop_steps": 3e3,
+            "n_episodes": 1,
+            "loop_steps_per_second": 50,
             "verbose": True,
         },
     )
@@ -57,7 +58,7 @@ def run_demo():
     """)
 
     print(
-        """
+        f"""
     A random agent will score an average reward in the neighborhood of 65.
     A perfect score is closer to 110.
 
