@@ -1,6 +1,9 @@
+import os
 import numpy as np
-from myrtle.agents.base_agent import BaseAgent
 from cartographer.model import NaiveCartographer as Model
+from ziptie.algo import Ziptie
+from myrtle.agents.base_agent import BaseAgent
+from myrtle.config import log_directory
 
 
 class FNCOneStepCuriosity(BaseAgent):
@@ -23,9 +26,8 @@ class FNCOneStepCuriosity(BaseAgent):
         feature_decay_rate=0.35,
         trace_decay_rate=0.3,
         reward_update_rate=0.3,
-        log_name=None,
-        log_dir=".",
-        logging_level="info",
+        fnc_snapshot_flag=False,
+        fnc_snapshot_interval=int(1e4),
         **kwargs,
     ):
         self.init_common(**kwargs)
@@ -38,6 +40,11 @@ class FNCOneStepCuriosity(BaseAgent):
             trace_decay_rate=trace_decay_rate,
             reward_update_rate=reward_update_rate,
         )
+
+        # Periodically save out a copy of information about the
+        # fuzzy naive cartographer.
+        self.fnc_snapshot_flag = fnc_snapshot_flag
+        self.fnc_snapshot_interval = fnc_snapshot_interval
 
         # A weight that affects how much influence curiosity has on the
         # agent's decision making process. It gets accumulated across all actions,
@@ -62,36 +69,22 @@ class FNCOneStepCuriosity(BaseAgent):
 
         self.action_threshold = action_threshold
 
-        self.initialize_log(log_name, log_dir, logging_level)
-
         # How often to report progress
         self.report_steps = int(1e4)
 
-        # This will get incremented to 0 by the reset.
-        self.i_episode = -1
-        self.reset()
-
     def reset(self):
-        self.display()
         self.sensors = np.zeros(self.n_sensors)
         self.previous_sensors = np.zeros(self.n_sensors)
         self.actions = np.zeros(self.n_actions)
         self.rewards = [0] * self.n_rewards
-        self.reward_history = [0.0] * self.report_steps
         self.curiosities = np.zeros((self.n_sensors, self.n_actions + 2))
 
-        self.i_episode += 1
-        self.i_step = 0
-
-    def step(self):
+    def choose_action(self):
         # Update the running total of actions taken and how much reward they generate.
         reward = 0.0
         for reward_channel in self.rewards:
             if reward_channel is not None:
                 reward += reward_channel
-
-        self.reward_history.append(reward)
-        self.reward_history.pop(0)
 
         self.model.update_sensors_and_rewards(self.sensors, self.rewards)
 
@@ -134,33 +127,38 @@ class FNCOneStepCuriosity(BaseAgent):
         # raised to the power of the exploitation factor,
         # scaled to match the average reward.
         self.curiosities += (
-            uncertainties**self.exploitation_factor
+            uncertainties ** self.exploitation_factor
+            * self.sensors[:, np.newaxis]
             * self.curiosity_scale
             * self.reward_scale
         )
         # Reset the curiosity counter on the selected state-action pairs.
         self.curiosities[:, i_action] *= 1.0 - self.sensors
 
-        if self.i_step % self.report_steps == 0:
-            self.display()
-
         # Make sure to make a copy here, so that previous_sensors and sensors don't
         # end up pointing at the same Numpy Array object.
         self.previous_sensors = self.sensors.copy()
 
-    def display(self):
-        try:
-            if self.i_step == 0:
-                return
-            n = np.minimum(self.i_step, self.report_steps)
-            avg_reward = np.sum(np.array(self.reward_history)) / n
-        except AttributeError:
-            return
+        if self.fnc_snapshot_flag and self.i_step % self.fnc_snapshot_interval == 0:
+            os.makedirs(os.path.join(log_directory, "fnc"), exist_ok=True)
 
-        print(
-            f"Average reward of {avg_reward} at time step {self.i_step:,},"
-            + f" episode {self.i_episode}"
-        )
-        n_lines = 4
-        for _ in range(n_lines):
-            print()
+            np.save(
+                os.path.join(log_directory, "fnc", "curiosities.npy"),
+                self.curiosities
+            )
+            np.save(
+                os.path.join(log_directory, "fnc", "predictions.npy"),
+                predictions
+            )
+            np.save(
+                os.path.join(log_directory, "fnc", "predicted_reward.npy"),
+                predicted_rewards,
+            )
+            np.save(
+                os.path.join(log_directory, "fnc", "sensors.npy"),
+                self.sensors
+            )
+            np.save(
+                os.path.join(log_directory, "fnc", "previous_sensors.npy"),
+                self.previous_sensors,
+            )

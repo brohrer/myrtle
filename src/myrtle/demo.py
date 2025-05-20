@@ -14,8 +14,8 @@ def run_demo():
     learning a contextual bandit--a multi-armed bandit where sensor values
     indicate which one has the highest payout.
 
-    This demo runs for 3,000 steps,
-    at 50 steps per second it takes about one minute.
+    This demo runs for 6,000 steps,
+    at 100 steps per second it takes about one minute.
     That's just enough time for it
     to settle in to good (close to optimal) behavior.
 
@@ -33,9 +33,9 @@ def run_demo():
             "learning_rate": 0.01,
         },
         world_args={
-            "n_loop_steps": 3e3,
+            "n_loop_steps": 6e3,
             "n_episodes": 1,
-            "loop_steps_per_second": 50,
+            "loop_steps_per_second": 100,
             "verbose": True,
         },
     )

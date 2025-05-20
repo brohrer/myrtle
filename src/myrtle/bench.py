@@ -30,11 +30,12 @@ from pacemaker.pacemaker import Pacemaker
 from sqlogging import logging
 
 _db_name_default = "bench"
-_logging_frequency = 200  # Hz
+_logging_frequency = 200.0  # Hz
 _health_check_frequency = 10.0  # Hz
 _warmup_delay = 2.0  # seconds
 _shutdown_timeout = 1.0  # seconds
 _shutdown_wait = 0.1  # seconds
+_logging_retry_wait = 1 / _logging_frequency  # seconds
 
 
 def run(
@@ -72,19 +73,17 @@ def run(
     A full history of the run is stored in {logging_db_name}.db
     Check in on its progress with
 
-        uv run src/myrtle/reports/reward.py {logging_db_name}
-    and
-        uv run src/myrtle/reports/timing.py {logging_db_name}
+    Check learning progress:   uv run reward_report {logging_db_name}
 
-    You can find the report charts in the {log_directory} directory.
+    Check timing:              uv run timing_report {logging_db_name}
+
+        Find report charts in the {log_directory} directory.
         """)
 
     control_pacemaker = Pacemaker(_health_check_frequency)
 
     print(f"""
-    Follow the reward trace in real time at
-        http://{monitor_host}:{monitor_port}/bench.html
-
+    Watch learning progress:   http://{monitor_host}:{monitor_port}/bench.html
     """)
 
     # Kick off the message queue process
@@ -297,7 +296,12 @@ def _reward_logging(dbname, agent, world, verbose):
             "ts_recv": msg["ts_recv"],
             "ts_send": msg["ts_send"],
         }
-        logger.info(log_data)
+        try:
+            logger.info(log_data)
+        except sqlite3.OperationalError:
+            # Retry once if database is locked
+            time.sleep(_logging_retry_wait)
+            logger.info(log_data)
 
         # Check whether there is new agent step reported.
         msg_str = mq_logging_client.get("agent_step")

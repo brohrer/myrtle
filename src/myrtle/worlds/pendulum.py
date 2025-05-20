@@ -55,15 +55,12 @@ class Pendulum(BaseWorld):
             verbose=verbose,
             **kwargs,
         )
-        print()
-        print("Watch the pendulum at")
-        print(f"http://{monitor_host}:{monitor_port}/pendulum.html")
-        print()
+        print(f"""
+    Watch the pendulum swing:  http://{monitor_host}:{monitor_port}/pendulum.html
+        """)
 
         self.reset()
-        # self.action_scale = 8 * np.array(
-        # self.action_scale = 4 * np.array(
-        self.action_scale = 2 * np.array(
+        self.action_scale = 16 * np.array(
             [
                 -1.0,
                 -0.75,
@@ -87,7 +84,6 @@ class Pendulum(BaseWorld):
         self.world_steps_per_vis_update = int(
             np.ceil(self.world_steps_per_second / vis_updates_per_second)
         )
-        # self.reward_smoothing = 0.003
 
         self.mass = 1  # kilogram
         self.length = 2  # meter
@@ -107,8 +103,6 @@ class Pendulum(BaseWorld):
 
         self.reset_sensors()
 
-        # self.smoothed_reward = 0.0
-
     def reset_sensors(self):
         self.n_sensors = 2
 
@@ -117,10 +111,6 @@ class Pendulum(BaseWorld):
     def sense(self):
         # Calculate the reward based on the position of the pendulum.
         self.rewards = [1.0 - np.cos(self.position)]
-
-        # self.smoothed_reward = (
-        #     1 - self.reward_smoothing
-        # ) * self.smoothed_reward + self.reward_smoothing * self.rewards[0]
 
         self.step_sensors()
 
@@ -142,17 +132,9 @@ class Pendulum(BaseWorld):
         # Add the discrete-time approximation of Newtonian mechanics, F = ma
         self.velocity += torque * self.dt / self.inertia
         new_position = self.position + self.velocity * self.dt
-        # self.position += self.velocity * self.dt
 
         # Keep position in the range of [0, 2 pi)
         self.position = np.mod(new_position, 2 * np.pi)
-
-        if self.i_world_step % self.world_steps_per_vis_update == 0:
-            # self.display()
-            pass
-            # if self.using_dash:
-            #     current_reward = 1.0 - np.cos(self.position)
-            #     self.dash_q.put((self.position, self.velocity, current_reward))
 
     def step_sensors(self):
         self.sensors = np.array([self.position, self.velocity])
@@ -168,30 +150,3 @@ class Pendulum(BaseWorld):
             }
         )
         self.mq.put("pendulum_state", msg)
-
-    def display(self):
-        n_lines = 3
-
-        # print(
-        #     f"reward {self.smoothed_reward:.3}  at step {self.i_step:,},"
-        #     + f" episode {self.i_episode}                                        "
-        # )
-
-        # Build a string showing the current angle of the pendulum.
-        n_angles = 72
-        i_angle = 1 + int(n_angles * self.position / (2 * np.pi))
-        position_list = ["_"] * (n_angles + 1)
-        position_list[i_angle] = "0"
-        position_string = "".join(position_list)
-        print(position_string, "             ")
-        print(
-            "0        45       90      120     -180-     225      270      315      360"
-        )
-        # angle = int(self.position * 360 / (2 * np.pi))
-        # angular_vel = int(self.velocity * 360 / (2 * np.pi))
-
-        print("", flush=True)
-
-        # Go to the beginning of the previous nth line.
-        for _ in range(n_lines):
-            print("\033[F", end="")

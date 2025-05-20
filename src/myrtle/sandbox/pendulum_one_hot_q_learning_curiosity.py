@@ -4,19 +4,17 @@ from sqlogging import logging
 from myrtle import bench
 from myrtle.config import log_directory
 from myrtle.agents.q_learning_curiosity import QLearningCuriosity
-from myrtle.worlds.pendulum_discrete import PendulumDiscrete
-# from myrtle.worlds.pendulum_discrete_one_hot import PendulumDiscreteOneHot
+from myrtle.worlds.pendulum_discrete_one_hot import PendulumDiscreteOneHot
 
 
-# curiosity_scale = 1.0
-curiosity_scale = 0.1
+curiosity_scale = 1.0
 discount_factor = 0.5
-learning_rate = 0.1
+learning_rate = 0.04
 
 n_loop_steps = 1e10
-n_episodes = 1
+n_episodes= 1
 loops_per_second = 8
-speedup = 1
+speedup = 8
 verbose = True
 
 db_name = f"q_curiosity_pendulum_{int(time.time())}"
@@ -28,14 +26,25 @@ db_name = f"q_curiosity_pendulum_{int(time.time())}"
 # self.action_scale = 2 * np.array(
 # self.action_scale = 4 * np.array(  # was 8
 # discount_factor: 0.5, learning_rate:0.1, loops_per_second: 8, speedup_8
+#
+# PendulumDiscreteOneHot learning_rate:0.03 curiosity_scale: 1.0
+# self.action_scale = 16 * np.array(  @ 150k
+#
+# learning rate = .1 : 1.3 @ 500K
+# learning rate = .01 2 @ 300k
+# learning rate = .03 2 @ 150k
+# learning rate = .05 2 @ 115k
+# learning rate = .05 2 @ 115k
+
+# save and move on to PendulumDiscrete and ziptie
+# also try moving on to cartographer
 
 def main():
     start_time = time.time()
 
     bench.run(
         QLearningCuriosity,
-        PendulumDiscrete,
-        # PendulumDiscreteOneHot,
+        PendulumDiscreteOneHot,
         log_to_db=True,
         logging_db_name=db_name,
         world_args={

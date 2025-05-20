@@ -28,9 +28,9 @@ class NonStationaryBandit(BaseWorld):
         # The highest paying bandit is 2 with average payout of .4 * 280 = 112.
         # Others are 100 or less.
         self.bandit_payouts_pre = [150, 200, 280, 320, 500]
-        self.bandit_hit_rates_pre = [0.6, 0.5, 0.4, 0.3, 0.2]
+        self.bandit_hit_rates_pre = [0.3, 0.3, 0.4, 0.2, 0.1]
         self.bandit_payouts_post = [320, 500, 150, 200, 280]
-        self.bandit_hit_rates_post = [0.3, 0.2, 0.6, 0.5, 0.4]
+        self.bandit_hit_rates_post = [0.2, 0.1, 0.3, 0.3, 0.4]
 
     def sense(self):
         if self.i_loop_step < self.time_step_switch:

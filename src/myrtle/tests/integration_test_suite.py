@@ -15,13 +15,19 @@ from myrtle.agents.greedy_state_blind_eps import GreedyStateBlindEpsilon
 from myrtle.agents.value_avg_curiosity import ValueAvgCuriosity
 from myrtle.agents.q_learning_eps import QLearningEpsilon
 from myrtle.agents.q_learning_curiosity import QLearningCuriosity
+from myrtle.agents.q_learning_ziptie_curiosity import QLearningZiptieCuriosity
+from myrtle.agents.q_learning_buckettree_ziptie import QLearningBuckettreeZiptie
+from myrtle.agents.fnc_one_step_curiosity import FNCOneStepCuriosity
+from myrtle.agents.fnc_ziptie_one_step import FNCZiptieOneStep
 
 from myrtle.worlds.base_world import BaseWorld
 from myrtle.worlds.stationary_bandit import StationaryBandit
 from myrtle.worlds.nonstationary_bandit import NonStationaryBandit
 from myrtle.worlds.intermittent_reward_bandit import IntermittentRewardBandit
 from myrtle.worlds.contextual_bandit import ContextualBandit
+from myrtle.worlds.contextual_bandit_2d import ContextualBandit2D
 from myrtle.worlds.one_hot_contextual_bandit import OneHotContextualBandit
+from myrtle.worlds.pendulum_discrete_one_hot import PendulumDiscreteOneHot
 from myrtle.worlds.pendulum_discrete import PendulumDiscrete
 from myrtle.worlds.pendulum import Pendulum
 
@@ -38,7 +44,7 @@ def main():
     # test_base_world_greedy_state_blind_eps_agent()
     # test_base_world_value_avg_curiosity_agent()
     # test_base_world_q_learning_eps_agent()
-    test_base_world_q_learning_curiosity_agent()
+    # test_base_world_q_learning_curiosity_agent()
     # test_stationary_bandit_world_q_learning_curiosity_agent()
     # test_nonstationary_bandit_world_q_learning_curiosity_agent()
     # test_intermittent_reward_bandit_world_q_learning_curiosity_agent()
@@ -46,6 +52,12 @@ def main():
     # test_one_hot_contextual_bandit_world_q_learning_curiosity_agent()
     # test_pendulum_discrete_world_q_learning_curiosity_agent()
     # test_pendulum_world_q_learning_curiosity_agent()
+    # test_pendulum_discrete_world_ziptie_q_learning_curiosity_agent()
+    # test_contextual_bandid_2d_world_ziptie_q_learning_curiosity_agent()
+    # test_pendulum_world_buckettree_ziptie_q_learning_curiosity_agent()
+    # test_one_hot_contextual_bandit_world_fnc_agent()
+    # test_pendulum_one_hot_world_fnc_agent()
+    test_pendulum_discrete_world_fnc_ziptie_agent()
 
 
 def db_cleanup():
@@ -64,6 +76,7 @@ def run_world_with_agent(
     agent_args={},
     reward_lower_bound=-1.0,
     reward_upper_bound=0.0,
+    speedup=1,
     timeout=_default_timeout,
 ):
     """
@@ -80,6 +93,7 @@ def run_world_with_agent(
             "n_loop_steps": n_loop_steps,
             "n_episodes": n_episodes,
             "loop_steps_per_second": loops_per_second,
+            "speedup": speedup,
             "verbose": True,
         },
         agent_args=agent_args,
@@ -232,9 +246,9 @@ def test_one_hot_contextual_bandit_world_q_learning_curiosity_agent():
 
 def test_pendulum_world_q_learning_curiosity_agent():
     agent_args = {
-        "curiosity_scale": 0.1,
-        "discount_factor": 0.9,
-        "learning_rate": 0.1,
+        "curiosity_scale": 1.0,
+        "discount_factor": 0.5,
+        "learning_rate": 0.03,
     }
     run_world_with_agent(
         Pendulum,
@@ -249,9 +263,11 @@ def test_pendulum_world_q_learning_curiosity_agent():
 
 def test_pendulum_discrete_world_q_learning_curiosity_agent():
     agent_args = {
-        "curiosity_scale": 0.1,
-        "discount_factor": 0.9,
-        "learning_rate": 0.1,
+        "curiosity_scale": 1.0,
+        "discount_factor": 0.5,
+        "learning_rate": 0.04,
+        "n_features": 2000,
+        "ziptie_threshold": 3.0,
     }
     run_world_with_agent(
         PendulumDiscrete,
@@ -260,6 +276,123 @@ def test_pendulum_discrete_world_q_learning_curiosity_agent():
         agent_args=agent_args,
         reward_lower_bound=0.0,
         reward_upper_bound=1.0,
+        timeout=_long_timeout,
+    )
+
+
+def test_pendulum_discrete_world_ziptie_q_learning_curiosity_agent():
+    agent_args = {
+        "curiosity_scale": 1.0,
+        "discount_factor": 0.5,
+        "learning_rate": 0.04,
+        "n_features": 2000,
+        "ziptie_threshold": 3.0,
+    }
+    run_world_with_agent(
+        PendulumDiscrete,
+        QLearningZiptieCuriosity,
+        n_loop_steps=int(1e4),
+        agent_args=agent_args,
+        reward_lower_bound=0.0,
+        reward_upper_bound=1.0,
+        timeout=_long_timeout,
+    )
+
+
+def test_contextual_bandid_2d_world_ziptie_q_learning_curiosity_agent():
+    agent_args = {
+        "curiosity_scale": 100.0,
+        "discount_factor": 1.0,
+        "learning_rate": 0.03,
+        "n_features": 4,
+        "ziptie_threshold": 3.0,
+    }
+    run_world_with_agent(
+        ContextualBandit2D,
+        QLearningZiptieCuriosity,
+        n_loop_steps=int(1e4),
+        agent_args=agent_args,
+        reward_lower_bound=0.0,
+        reward_upper_bound=1.0,
+        timeout=_long_timeout,
+    )
+
+
+def test_pendulum_world_buckettree_ziptie_q_learning_curiosity_agent():
+    agent_args = {
+        "curiosity_scale": 10.0,
+        "discount_factor": 0.5,
+        "learning_rate": 0.01,
+        "n_features": 10_000,
+        "ziptie_threshold": 100.0,
+    }
+    run_world_with_agent(
+        Pendulum,
+        QLearningBuckettreeZiptie,
+        n_loop_steps=int(1e4),
+        agent_args=agent_args,
+        reward_lower_bound=0.5,
+        reward_upper_bound=1.5,
+        timeout=_long_timeout,
+    )
+
+
+def test_one_hot_contextual_bandit_world_fnc_agent():
+    agent_args = {
+        "curiosity_scale": 1000.0,
+        "feature_decay_rate": 1.0,
+        "reward_update_rate": 0.001,
+        "trace_decay_rate": 1.0,
+    }
+    run_world_with_agent(
+        OneHotContextualBandit,
+        FNCOneStepCuriosity,
+        n_loop_steps=int(1e4),
+        agent_args=agent_args,
+        reward_lower_bound=60,
+        reward_upper_bound=120,
+        timeout=_long_timeout,
+    )
+
+
+def test_pendulum_one_hot_world_fnc_agent():
+    agent_args = {
+        "exploitation_factor": 2.0,
+        "feature_decay_rate": 1.0,
+        "reward_update_rate": 0.03,
+        "trace_decay_rate": 0.3,
+    }
+    run_world_with_agent(
+        PendulumDiscreteOneHot,
+        FNCOneStepCuriosity,
+        loops_per_second=8,
+        n_loop_steps=int(1e4),
+        speedup=8,
+        agent_args=agent_args,
+        reward_lower_bound=0.5,
+        reward_upper_bound=1.5,
+        timeout=_long_timeout,
+    )
+
+
+def test_pendulum_discrete_world_fnc_ziptie_agent():
+    agent_args = {
+        "exploitation_factor": 2.0,
+        "feature_decay_rate": 1.0,
+        "n_features": 3000,
+        "reward_update_rate": 0.03,
+        "trace_decay_rate": 0.3,
+        "ziptie_threshold": 3.0,
+    }
+    run_world_with_agent(
+        PendulumDiscrete,
+        FNCZiptieOneStep,
+        loops_per_second=8,
+        n_loop_steps=int(1e4),
+        speedup=8,
+        agent_args=agent_args,
+        reward_lower_bound=0.5,
+        reward_upper_bound=1.5,
         timeout=_long_timeout,
     )
 

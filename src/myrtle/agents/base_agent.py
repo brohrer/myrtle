@@ -13,7 +13,7 @@ from myrtle.config import mq_host, mq_port
 # Less delay than this starts to bog down the mq server.
 # More delay than this can result in a performance hit--a slight
 # latency increase in the world -> agent communication.
-_polling_delay = 0.005  # seconds
+_polling_delay = 0.001  # seconds
 
 
 class BaseAgent:
@@ -69,18 +69,14 @@ class BaseAgent:
                 while not (step_loop_complete or episode_complete or run_complete):
                     time.sleep(_polling_delay)
 
-                    # start = time.time()
                     step_loop_complete = self.read_world_step()
-                    # print(f"                        agent read  {int(1e6 * (time.time() - start))}")
 
                     # Each time through the polling loop, check
                     # whether the agent needs to be reset or terminated.
                     episode_complete, run_complete = self.control_check()
 
                 self.choose_action()
-                # start = time.time()
                 self.write_agent_step()
-                # print(f"                                                     agent write  {int(1e6 * (time.time() - start))}")
 
         self.close()
 

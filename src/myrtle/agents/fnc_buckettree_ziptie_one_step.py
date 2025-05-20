@@ -1,30 +1,37 @@
 import os
 import numpy as np
+from buckettree.bucket_tree import BucketTree
 from cartographer.model import NaiveCartographer as Model
 from ziptie.algo import Ziptie
 from myrtle.agents.base_agent import BaseAgent
 from myrtle.config import log_directory
 
 
-class FNCZiptieOneStep(BaseAgent):
+class FNCBuckettreeZiptieOneStep(BaseAgent):
     """
-    An agent that uses the Fuzzy Naive Cartographer (FNC) as a world model.
+    An agent that can accept discrete or continuous sensors, or a mixture.
+    It uses
+    - BucketTree to discretize sensors into fuzzy inputs,
+    - Ziptie to group fuzzy inputs into features,
+    - Fuzzy Naive Cartographer (FNC) to build features and rewards
+        into a world model.
 
     It also has a basic greedy one-step-lookahead planner and incorporates
     curiosity-driven exploration.
 
-    https://brandonrohrer.com/cartographer
-
-    It uses Ziptie to group sensors into features.
-
-    https://brandonrohrer.com/ziptie
+    Links
+    - https://brandonrohrer.com/buckettree
+    - https://brandonrohrer.com/ziptie
+    - https://brandonrohrer.com/cartographer
     """
 
-    name = "Naive Cartographer and Ziptie with One-Step Lookahead"
+    name = "Naive Cartographer with BucketTree and Ziptie"
 
     def __init__(
         self,
         action_threshold=0.5,
+        buckettree_snapshot_flag=False,
+        buckettree_snapshot_interval=9_000,
         curiosity_scale=1.0,
         exploitation_factor=1.0,
         feature_decay_rate=0.35,
@@ -34,23 +41,42 @@ class FNCZiptieOneStep(BaseAgent):
         ziptie_threshold=100.0,
         fnc_snapshot_flag=False,
         fnc_snapshot_interval=10_000,
+        max_buckets=100,
         ziptie_snapshot_flag=False,
         ziptie_snapshot_interval=11_000,
         **kwargs,
     ):
         self.init_common(**kwargs)
+
+        self.n_sensor_bins = self.n_sensors * max_buckets
         if n_features is None:
-            self.n_max_features = self.n_sensors
+            self.n_max_features = self.n_sensor_bins
         else:
             self.n_max_features = n_features
 
         self.ziptie = Ziptie(
-            n_cables=self.n_sensors,
+            n_cables=self.n_sensor_bins,
             n_bundles_max=self.n_max_features,
             threshold=ziptie_threshold
         )
         self.ziptie_snapshot_flag = ziptie_snapshot_flag
         self.ziptie_snapshot_interval = ziptie_snapshot_interval
+
+
+        self.buckettrees = []
+        for i_sensor in range(self.n_sensors):
+            self.buckettrees.append(BucketTree(max_buckets=max_buckets))
+
+            # Make it so that a sensor can't form features with itself.
+            # If allowed, this results in a large number
+            # of superfluous features.
+            self.ziptie.nucleation_mask[
+                i_sensor * max_buckets: (i_sensor + 1) * max_buckets,
+                i_sensor * max_buckets: (i_sensor + 1) * max_buckets
+            ] = 0
+
+        self.buckettree_snapshot_flag = buckettree_snapshot_flag
+        self.buckettree_snapshot_interval = buckettree_snapshot_interval
 
         self.model = Model(
             n_sensors=self.n_max_features,
@@ -104,14 +130,22 @@ class FNCZiptieOneStep(BaseAgent):
             if reward_channel is not None:
                 reward += reward_channel
 
+        binned = []
+        for i in range(self.n_sensors):
+            binned.append(self.buckettrees[i].bin(self.sensors[i]))
+
+        self.sensors_binned = np.concatenate(tuple(binned))
+
         if self.ziptie.n_bundles < self.n_max_features:
             self.ziptie.create_new_bundles()
             self.ziptie.grow_bundles()
 
-        features = self.ziptie.update_bundles(self.sensors)
-        self.features = np.zeros(self.n_max_features)
-        if features.size > 0:
+        features = self.ziptie.update_bundles(self.sensors_binned)
+        if features.size < self.n_max_features:
+            self.features = np.zeros(self.n_max_features)
             self.features[:features.size] = features
+        else:
+            self.features = features
 
         self.model.update_sensors_and_rewards(self.features, self.rewards)
 
@@ -119,7 +153,7 @@ class FNCZiptieOneStep(BaseAgent):
         # Choose a single action to take on this time step by looking ahead
         # to the expected immediate reward it would return, and including
         # any curiosity that would be satisfied.
-        predictions, predicted_rewards, uncertainties = self.model.predict()
+        self.predictions, self.predicted_rewards, uncertainties = self.model.predict()
 
         # Calculate the curiosity associated with each action.
         # There's a small amount of intrinsic reward associated with
@@ -129,12 +163,12 @@ class FNCZiptieOneStep(BaseAgent):
         # Find the most valuable action, including the influence of curiosity.
         # Ignore the "average" action from the model.
         # It will always be in the final position.
-        max_value = np.max((predicted_rewards + curiosities)[:-1])
+        max_value = np.max((self.predicted_rewards + curiosities)[:-1])
         # In the case where there are multiple matches for the highest value,
         # randomly pick one of them. This is especially useful
         # in the beginning when all the values are zero.
         i_action = np.random.choice(
-            np.where((predicted_rewards + curiosities)[:-1] == max_value)[0]
+            np.where((self.predicted_rewards + curiosities)[:-1] == max_value)[0]
         )
 
         self.actions = np.zeros(self.n_actions)
@@ -166,36 +200,35 @@ class FNCZiptieOneStep(BaseAgent):
         # end up pointing at the same Numpy Array object.
         self.previous_sensors = self.sensors.copy()
 
+
+        self.snapshot()
+
+    def snapshot(self):
         if (
-            self.fnc_snapshot_flag and
-            self.i_step % self.fnc_snapshot_interval == 0
+            self.buckettree_snapshot_flag and
+            self.i_step % self.buckettree_snapshot_interval == 0
         ):
-            os.makedirs(os.path.join(log_directory, "fnc"), exist_ok=True)
-            log_subdir = "fnc"
-            np.save(
-                os.path.join(log_directory, log_subdir, "curiosities.npy"),
-                self.curiosities
-            )
-            np.save(
-                os.path.join(log_directory, log_subdir, "features.npy"),
-                self.features
-            )
-            np.save(
-                os.path.join(log_directory, log_subdir, "predicted_reward.npy"),
-                predicted_rewards,
-            )
-            np.save(
-                os.path.join(log_directory, log_subdir, "predictions.npy"),
-                predictions
-            )
-            np.save(
-                os.path.join(log_directory, log_subdir, "previous_sensors.npy"),
-                self.previous_sensors,
-            )
-            np.save(
-                os.path.join(log_directory, log_subdir, "sensors.npy"),
-                self.sensors
-            )
+            log_subdir = "buckettree"
+            os.makedirs(os.path.join(log_directory, log_subdir), exist_ok=True)
+
+            for i, bt in enumerate(self.buckettrees):
+                tree_dir = f"tree_{i}"
+                os.makedirs(
+                    os.path.join(log_directory, log_subdir, tree_dir),
+                    exist_ok=True
+                )
+                np.save(
+                    os.path.join(log_directory, log_subdir, tree_dir, f"highs.npy"),
+                    bt.highs
+                )
+                np.save(
+                    os.path.join(log_directory, log_subdir, tree_dir, f"lows.npy"),
+                    bt.lows
+                )
+                np.save(
+                    os.path.join(log_directory, log_subdir, tree_dir, f"levels.npy"),
+                    bt.levels
+                )
 
         if (
             self.ziptie_snapshot_flag and
@@ -235,4 +268,35 @@ class FNCZiptieOneStep(BaseAgent):
             np.save(
                 os.path.join(log_directory, log_subdir, "agglomeration_mask.npy"),
                 self.ziptie.agglomeration_mask
+            )
+
+        if (
+            self.fnc_snapshot_flag and
+            self.i_step % self.fnc_snapshot_interval == 0
+        ):
+            os.makedirs(os.path.join(log_directory, "fnc"), exist_ok=True)
+            log_subdir = "fnc"
+            np.save(
+                os.path.join(log_directory, log_subdir, "curiosities.npy"),
+                self.curiosities
+            )
+            np.save(
+                os.path.join(log_directory, log_subdir, "features.npy"),
+                self.features
+            )
+            np.save(
+                os.path.join(log_directory, log_subdir, "predicted_reward.npy"),
+                self.predicted_rewards,
+            )
+            np.save(
+                os.path.join(log_directory, log_subdir, "predictions.npy"),
+                self.predictions
+            )
+            np.save(
+                os.path.join(log_directory, log_subdir, "previous_sensors.npy"),
+                self.previous_sensors,
+            )
+            np.save(
+                os.path.join(log_directory, log_subdir, "sensors.npy"),
+                self.sensors
             )
