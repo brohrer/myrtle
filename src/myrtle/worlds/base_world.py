@@ -156,7 +156,7 @@ class BaseWorld:
 
                 if self.verbose:
                     print(
-                        f"episode {self.i_episode}  loop step {self.i_loop_step}",
+                        f"    episode {self.i_episode}  loop step {self.i_loop_step}",
                         end="\r",
                     )
 

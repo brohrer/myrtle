@@ -41,7 +41,7 @@ class FNCBuckettreeZiptieOneStep(BaseAgent):
         ziptie_threshold=100.0,
         fnc_snapshot_flag=False,
         fnc_snapshot_interval=10_000,
-        max_buckets=100,
+        max_buckets=50,
         ziptie_snapshot_flag=False,
         ziptie_snapshot_interval=11_000,
         **kwargs,

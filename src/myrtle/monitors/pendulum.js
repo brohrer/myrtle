@@ -27,14 +27,45 @@ let episode = 0;
 loop();
 
 function render() {
+  // Background
   ctx.fillStyle = 'Black';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Pendulum arm
+  ctx.strokeStyle = 'CadetBlue';
+  ctx.lineWidth = 7;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  ctx.moveTo(xCenterPixel, yCenterPixel);
+  ctx.lineTo(
+    xCenterPixel + radius * Math.sin(angle),
+    yCenterPixel + radius * Math.cos(angle)
+  );
+  ctx.stroke();
+
+  // Pendulum base
   ctx.fillStyle = 'CadetBlue';
   ctx.beginPath();
   ctx.arc(
-    xCenterPixel + radius * Math.sin(angle),
-    yCenterPixel + radius * Math.cos(angle),
-    10,
+    // xCenterPixel + radius * Math.sin(angle),
+    // yCenterPixel + radius * Math.cos(angle),
+    xCenterPixel,
+    yCenterPixel,
+    17,
+    0,
+    Math.PI * 2
+  );
+  ctx.fill();
+
+  //Pendulum axle
+  ctx.fillStyle = 'Black';
+  ctx.beginPath();
+  ctx.arc(
+    // xCenterPixel + radius * Math.sin(angle),
+    // yCenterPixel + radius * Math.cos(angle),
+    xCenterPixel,
+    yCenterPixel,
+    12,
     0,
     Math.PI * 2
   );
@@ -42,6 +73,7 @@ function render() {
 
   let yText = canvas.width * 0.94;
   let xText = canvas.width / 4;
+  ctx.fillStyle = 'CadetBlue';
   ctx.font = "20px Courier New";
   ctx.fillText(`angle      ${angle.toFixed(2)}`, xText, yText + textYOffset * 1);
   if (velocity < 0){

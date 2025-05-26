@@ -67,24 +67,20 @@ def run(
       World: {World.name}
       Agent: {Agent.name}
 
-    """)
+    Cancel run:                CTRL-c twice""")
     if log_to_db:
         print(f"""
-    A full history of the run is stored in {logging_db_name}.db
-    Check in on its progress with
-
     Check learning progress:   uv run reward_report {logging_db_name}
 
     Check timing:              uv run timing_report {logging_db_name}
 
-        Find report charts in the {log_directory} directory.
-        """)
+      Reports are saved in the {log_directory} directory.
+      A full history of the run is stored in {logging_db_name}.db """)
 
     control_pacemaker = Pacemaker(_health_check_frequency)
 
     print(f"""
-    Watch learning progress:   http://{monitor_host}:{monitor_port}/bench.html
-    """)
+    Watch learning progress:   http://{monitor_host}:{monitor_port}/bench.html""")
 
     # Kick off the message queue process
     p_mq_server = mp.Process(

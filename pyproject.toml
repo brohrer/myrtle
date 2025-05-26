@@ -1,6 +1,6 @@
 [project]
 name = "myrtle"
-version = "0.9.0"
+version = "1.0.0"
 authors = [
   { name="Brandon Rohrer", email="brohrer@gmail.com" },
 ]
@@ -10,18 +10,18 @@ for real-time reinforcement learning
 with multiple intermittent rewards'''
 
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = "==3.12.6"
 dependencies = [
-    "bucket-tree",
-    "cartographer",
-    "dsmq",
+    "bucket-tree==0.1.4",
+    "dsmq==1.4.1",
     "matplotlib>=3.10.1",
+    "naive-cartographer==3.0.1",
     "numba>=0.61.2",
     "numpy>=2.1.3",
-    "pacemaker-lite>=0.1.3",
+    "pacemaker-lite==0.1.3",
     "requests>=2.32.3",
-    "sqlite-logging>=0.0.4",
-    "ziptie>=1.1.5",
+    "sqlite-logging==0.0.4",
+    "ziptie==1.2.1",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -30,8 +30,10 @@ classifiers = [
 ]
 
 [project.scripts]
+buckettree_report = "myrtle.reports.buckettree:report_buckettree"
 reward_report = "myrtle.reports.reward:cli"
 timing_report = "myrtle.reports.timing:cli"
+ziptie_report = "myrtle.reports.ziptie:report"
 
 [project.urls]
 Homepage = "https://codeberg.org/brohrer/myrtle"
@@ -121,9 +123,3 @@ skip-magic-trailing-comma = false
 dev-dependencies = [
     "pytest>=8.3.4",
 ]
-
-[tool.uv.sources]
-dsmq = { path = "../dsmq", editable = true }
-bucket-tree = { path = "../bucket-tree", editable = true }
-ziptie = { path = "../ziptie", editable = true }
-cartographer = { path = "../cartographer", editable = true }
