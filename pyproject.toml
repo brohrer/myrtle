@@ -1,6 +1,6 @@
 [project]
 name = "myrtle"
-version = "1.0.0"
+version = "1.0.2"
 authors = [
   { name="Brandon Rohrer", email="brohrer@gmail.com" },
 ]
@@ -10,7 +10,7 @@ for real-time reinforcement learning
 with multiple intermittent rewards'''
 
 readme = "README.md"
-requires-python = "==3.12.6"
+requires-python = ">=3.12"
 dependencies = [
     "bucket-tree==0.1.4",
     "dsmq==1.4.1",
@@ -43,13 +43,12 @@ Repository = "https://codeberg.org/brohrer/myrtle.git"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
-# Repository = "https://codeberg.org/brohrer/myrtle.git"
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/myrtle"]
+# [tool.hatch.build.targets.wheel]
+# packages = ["src/myrtle"]
 
 [tool.hatch.build.targets.sdist]
-sources = ["/", "src/myrtle"]
+# sources = ["/", "src/myrtle"]
 include = [
   "*.md",
   "config.toml",
