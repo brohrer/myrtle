@@ -1,11 +1,12 @@
-import json
+# import json
 import multiprocessing as mp
 import pytest
-from threading import Thread
+
+# from threading import Thread
 import time
 import numpy as np
 from myrtle.agents import base_agent
-from myrtle.tests.world_mocks import multiepisode_world
+# from myrtle.tests.world_mocks import multiepisode_world
 
 # Exclude pytest fixtures from some checks because they behave in peculiar ways.
 from myrtle.tests.fixtures import setup_mq_server, setup_mq_client  # noqa: F401

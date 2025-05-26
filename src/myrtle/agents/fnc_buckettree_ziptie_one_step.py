@@ -57,11 +57,10 @@ class FNCBuckettreeZiptieOneStep(BaseAgent):
         self.ziptie = Ziptie(
             n_cables=self.n_sensor_bins,
             n_bundles_max=self.n_max_features,
-            threshold=ziptie_threshold
+            threshold=ziptie_threshold,
         )
         self.ziptie_snapshot_flag = ziptie_snapshot_flag
         self.ziptie_snapshot_interval = ziptie_snapshot_interval
-
 
         self.buckettrees = []
         for i_sensor in range(self.n_sensors):
@@ -71,8 +70,8 @@ class FNCBuckettreeZiptieOneStep(BaseAgent):
             # If allowed, this results in a large number
             # of superfluous features.
             self.ziptie.nucleation_mask[
-                i_sensor * max_buckets: (i_sensor + 1) * max_buckets,
-                i_sensor * max_buckets: (i_sensor + 1) * max_buckets
+                i_sensor * max_buckets : (i_sensor + 1) * max_buckets,
+                i_sensor * max_buckets : (i_sensor + 1) * max_buckets,
             ] = 0
 
         self.buckettree_snapshot_flag = buckettree_snapshot_flag
@@ -143,7 +142,7 @@ class FNCBuckettreeZiptieOneStep(BaseAgent):
         features = self.ziptie.update_bundles(self.sensors_binned)
         if features.size < self.n_max_features:
             self.features = np.zeros(self.n_max_features)
-            self.features[:features.size] = features
+            self.features[: features.size] = features
         else:
             self.features = features
 
@@ -188,7 +187,7 @@ class FNCBuckettreeZiptieOneStep(BaseAgent):
         # raised to the power of the exploitation factor,
         # scaled to match the average reward.
         self.curiosities += (
-            uncertainties ** self.exploitation_factor
+            uncertainties**self.exploitation_factor
             * self.features[:, np.newaxis]
             * self.curiosity_scale
             * self.reward_scale
@@ -200,13 +199,12 @@ class FNCBuckettreeZiptieOneStep(BaseAgent):
         # end up pointing at the same Numpy Array object.
         self.previous_sensors = self.sensors.copy()
 
-
         self.snapshot()
 
     def snapshot(self):
         if (
-            self.buckettree_snapshot_flag and
-            self.i_step % self.buckettree_snapshot_interval == 0
+            self.buckettree_snapshot_flag
+            and self.i_step % self.buckettree_snapshot_interval == 0
         ):
             log_subdir = "buckettree"
             os.makedirs(os.path.join(log_directory, log_subdir), exist_ok=True)
@@ -214,75 +212,70 @@ class FNCBuckettreeZiptieOneStep(BaseAgent):
             for i, bt in enumerate(self.buckettrees):
                 tree_dir = f"tree_{i}"
                 os.makedirs(
-                    os.path.join(log_directory, log_subdir, tree_dir),
-                    exist_ok=True
+                    os.path.join(log_directory, log_subdir, tree_dir), exist_ok=True
                 )
                 np.save(
-                    os.path.join(log_directory, log_subdir, tree_dir, f"highs.npy"),
-                    bt.highs
+                    os.path.join(log_directory, log_subdir, tree_dir, "highs.npy"),
+                    bt.highs,
                 )
                 np.save(
-                    os.path.join(log_directory, log_subdir, tree_dir, f"lows.npy"),
-                    bt.lows
+                    os.path.join(log_directory, log_subdir, tree_dir, "lows.npy"),
+                    bt.lows,
                 )
                 np.save(
-                    os.path.join(log_directory, log_subdir, tree_dir, f"levels.npy"),
-                    bt.levels
+                    os.path.join(log_directory, log_subdir, tree_dir, "levels.npy"),
+                    bt.levels,
                 )
 
         if (
-            self.ziptie_snapshot_flag and
-            self.i_step % self.ziptie_snapshot_interval == 0
+            self.ziptie_snapshot_flag
+            and self.i_step % self.ziptie_snapshot_interval == 0
         ):
             log_subdir = "ziptie"
             os.makedirs(os.path.join(log_directory, log_subdir), exist_ok=True)
 
             np.save(
                 os.path.join(log_directory, log_subdir, "cable_activities.npy"),
-                self.ziptie.cable_activities
+                self.ziptie.cable_activities,
             )
             np.save(
                 os.path.join(log_directory, log_subdir, "bundle_activities.npy"),
-                self.ziptie.bundle_activities
+                self.ziptie.bundle_activities,
             )
             np.save(
                 os.path.join(log_directory, log_subdir, "mapping.npy"),
-                self.ziptie.mapping
+                self.ziptie.mapping,
             )
             np.save(
                 os.path.join(log_directory, log_subdir, "n_cables_by_bundle.npy"),
-                self.ziptie.n_cables_by_bundle
+                self.ziptie.n_cables_by_bundle,
             )
             np.save(
                 os.path.join(log_directory, log_subdir, "nucleation_energy.npy"),
-                self.ziptie.nucleation_energy
+                self.ziptie.nucleation_energy,
             )
             np.save(
                 os.path.join(log_directory, log_subdir, "nucleation_mask.npy"),
-                self.ziptie.nucleation_mask
+                self.ziptie.nucleation_mask,
             )
             np.save(
                 os.path.join(log_directory, log_subdir, "agglomeration_energy.npy"),
-                self.ziptie.agglomeration_energy
+                self.ziptie.agglomeration_energy,
             )
             np.save(
                 os.path.join(log_directory, log_subdir, "agglomeration_mask.npy"),
-                self.ziptie.agglomeration_mask
+                self.ziptie.agglomeration_mask,
             )
 
-        if (
-            self.fnc_snapshot_flag and
-            self.i_step % self.fnc_snapshot_interval == 0
-        ):
+        if self.fnc_snapshot_flag and self.i_step % self.fnc_snapshot_interval == 0:
             os.makedirs(os.path.join(log_directory, "fnc"), exist_ok=True)
             log_subdir = "fnc"
             np.save(
                 os.path.join(log_directory, log_subdir, "curiosities.npy"),
-                self.curiosities
+                self.curiosities,
             )
             np.save(
-                os.path.join(log_directory, log_subdir, "features.npy"),
-                self.features
+                os.path.join(log_directory, log_subdir, "features.npy"), self.features
             )
             np.save(
                 os.path.join(log_directory, log_subdir, "predicted_reward.npy"),
@@ -290,13 +283,12 @@ class FNCBuckettreeZiptieOneStep(BaseAgent):
             )
             np.save(
                 os.path.join(log_directory, log_subdir, "predictions.npy"),
-                self.predictions
+                self.predictions,
             )
             np.save(
                 os.path.join(log_directory, log_subdir, "previous_sensors.npy"),
                 self.previous_sensors,
             )
             np.save(
-                os.path.join(log_directory, log_subdir, "sensors.npy"),
-                self.sensors
+                os.path.join(log_directory, log_subdir, "sensors.npy"), self.sensors
             )

@@ -47,7 +47,7 @@ class FNCZiptieOneStep(BaseAgent):
         self.ziptie = Ziptie(
             n_cables=self.n_sensors,
             n_bundles_max=self.n_max_features,
-            threshold=ziptie_threshold
+            threshold=ziptie_threshold,
         )
         self.ziptie_snapshot_flag = ziptie_snapshot_flag
         self.ziptie_snapshot_interval = ziptie_snapshot_interval
@@ -111,7 +111,7 @@ class FNCZiptieOneStep(BaseAgent):
         features = self.ziptie.update_bundles(self.sensors)
         self.features = np.zeros(self.n_max_features)
         if features.size > 0:
-            self.features[:features.size] = features
+            self.features[: features.size] = features
 
         self.model.update_sensors_and_rewards(self.features, self.rewards)
 
@@ -154,7 +154,7 @@ class FNCZiptieOneStep(BaseAgent):
         # raised to the power of the exploitation factor,
         # scaled to match the average reward.
         self.curiosities += (
-            uncertainties ** self.exploitation_factor
+            uncertainties**self.exploitation_factor
             * self.features[:, np.newaxis]
             * self.curiosity_scale
             * self.reward_scale
@@ -166,73 +166,67 @@ class FNCZiptieOneStep(BaseAgent):
         # end up pointing at the same Numpy Array object.
         self.previous_sensors = self.sensors.copy()
 
-        if (
-            self.fnc_snapshot_flag and
-            self.i_step % self.fnc_snapshot_interval == 0
-        ):
+        if self.fnc_snapshot_flag and self.i_step % self.fnc_snapshot_interval == 0:
             os.makedirs(os.path.join(log_directory, "fnc"), exist_ok=True)
             log_subdir = "fnc"
             np.save(
                 os.path.join(log_directory, log_subdir, "curiosities.npy"),
-                self.curiosities
+                self.curiosities,
             )
             np.save(
-                os.path.join(log_directory, log_subdir, "features.npy"),
-                self.features
+                os.path.join(log_directory, log_subdir, "features.npy"), self.features
             )
             np.save(
                 os.path.join(log_directory, log_subdir, "predicted_reward.npy"),
                 predicted_rewards,
             )
             np.save(
-                os.path.join(log_directory, log_subdir, "predictions.npy"),
-                predictions
+                os.path.join(log_directory, log_subdir, "predictions.npy"), predictions
             )
             np.save(
                 os.path.join(log_directory, log_subdir, "previous_sensors.npy"),
                 self.previous_sensors,
             )
             np.save(
-                os.path.join(log_directory, log_subdir, "sensors.npy"),
-                self.sensors
+                os.path.join(log_directory, log_subdir, "sensors.npy"), self.sensors
             )
 
         if (
-            self.ziptie_snapshot_flag and
-            self.i_step % self.ziptie_snapshot_interval == 0
+            self.ziptie_snapshot_flag
+            and self.i_step % self.ziptie_snapshot_interval == 0
         ):
             log_subdir = "ziptie"
             os.makedirs(os.path.join(log_directory, log_subdir), exist_ok=True)
 
             np.save(
                 os.path.join(log_directory, log_subdir, "cable_activities.npy"),
-                self.ziptie.cable_activities
+                self.ziptie.cable_activities,
             )
             np.save(
                 os.path.join(log_directory, log_subdir, "bundle_activities.npy"),
-                self.ziptie.bundle_activities
+                self.ziptie.bundle_activities,
             )
             np.save(
                 os.path.join(log_directory, log_subdir, "mapping.npy"),
-                self.ziptie.mapping
+                self.ziptie.mapping,
             )
             np.save(
                 os.path.join(log_directory, log_subdir, "n_cables_by_bundle.npy"),
-                self.ziptie.n_cables_by_bundle
+                self.ziptie.n_cables_by_bundle,
             )
             np.save(
                 os.path.join(log_directory, log_subdir, "nucleation_energy.npy"),
-                self.ziptie.nucleation_energy
+                self.ziptie.nucleation_energy,
             )
             np.save(
                 os.path.join(log_directory, log_subdir, "nucleation_mask.npy"),
-                self.ziptie.nucleation_mask
+                self.ziptie.nucleation_mask,
             )
             np.save(
                 os.path.join(log_directory, log_subdir, "agglomeration_energy.npy"),
-                self.ziptie.agglomeration_energy
+                self.ziptie.agglomeration_energy,
             )
             np.save(
                 os.path.join(log_directory, log_subdir, "agglomeration_mask.npy"),
-                self.ziptie.agglomeration_mask
+                self.ziptie.agglomeration_mask,
             )

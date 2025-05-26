@@ -9,7 +9,7 @@ from myrtle.worlds.contextual_bandit import ContextualBandit
 def run_demo():
     db_name = f"demo_db_{int(time.time())}"
     print(
-        f"""
+        """
     Demo of Myrtle running Q-Learning with curiosity-driven exploration,
     learning a contextual bandit--a multi-armed bandit where sensor values
     indicate which one has the highest payout.
@@ -58,7 +58,7 @@ def run_demo():
     """)
 
     print(
-        f"""
+        """
     A random agent will score an average reward in the neighborhood of 65.
     A perfect score is closer to 110.
 

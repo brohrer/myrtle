@@ -30,7 +30,7 @@ class QLearningBuckettreeZiptie(BaseAgent):
         self.ziptie = Ziptie(
             n_cables=self.n_sensor_bins,
             n_bundles_max=self.n_max_features,
-            threshold=ziptie_threshold
+            threshold=ziptie_threshold,
         )
         self.ziptie_publish_frequency = 1000
 
@@ -42,8 +42,8 @@ class QLearningBuckettreeZiptie(BaseAgent):
             # If allowed, this results in a large number
             # of superfluous features.
             self.ziptie.nucleation_mask[
-                i_sensor * max_buckets: (i_sensor + 1) * max_buckets,
-                i_sensor * max_buckets: (i_sensor + 1) * max_buckets
+                i_sensor * max_buckets : (i_sensor + 1) * max_buckets,
+                i_sensor * max_buckets : (i_sensor + 1) * max_buckets,
             ] = 0
 
         self.buckettree_publish_frequency = 100

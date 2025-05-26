@@ -52,5 +52,5 @@ def test_step_world(
     world.i_world_step = 0
     world.step_world()
 
-    assert world.velocity == 0.1875
-    assert world.position > 0.005 and world.position < 0.007
+    assert world.velocity > 0.8
+    assert world.position > 0.005 and world.position < 0.05

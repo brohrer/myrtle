@@ -107,7 +107,7 @@ def test_result_logging():
         f"""
         SELECT step
         FROM {_test_db_name}
-        ORDER BY step_timestamp DESC
+        ORDER BY ts_send DESC
         LIMIT 1
     """
     )
@@ -162,7 +162,7 @@ def test_multiple_runs():
     )
     result = logger.query(
         f"""
-        SELECT COUNT(DISTINCT run_timestamp)
+        SELECT COUNT(DISTINCT episode)
         FROM {_test_db_name}
     """
     )

@@ -7,9 +7,6 @@ from myrtle.reports.report_config import (
     array_2D_report,
 )
 
-# TODO
-# make sure mapping, nucleation energy and agglomeration energy arrays
-# are the right size (cable x bundle, cable x cable, and cable x bundle)
 
 def report():
     log_subdir = "ziptie"
@@ -19,12 +16,10 @@ def report():
     bundle_activities = np.load(
         os.path.join(log_directory, log_subdir, "bundle_activities.npy")
     )
-    mapping = np.load(
-        os.path.join(log_directory, log_subdir, "mapping.npy")
-    )
-    n_cables_by_bundle = np.load(
-        os.path.join(log_directory, log_subdir, "n_cables_by_bundle.npy")
-    )
+    mapping = np.load(os.path.join(log_directory, log_subdir, "mapping.npy"))
+    # n_cables_by_bundle = np.load(
+    #     os.path.join(log_directory, log_subdir, "n_cables_by_bundle.npy")
+    # )
     nucleation_energy = np.load(
         os.path.join(log_directory, log_subdir, "nucleation_energy.npy")
     )
@@ -109,7 +104,7 @@ def report():
     array_1D_report(bundle_activities, "bundle (feature) activities")
 
 
-'''
+"""
 import json
 import os
 import time
@@ -128,8 +123,8 @@ history_length_super_long = 1000
 
 _connection_wait = 2.0  # seconds
 _n_tries = 10
-'''
-'''
+"""
+"""
 def report_ziptie():
     mq = dsmq.client.connect(mq_host, mq_port)
     time.sleep(_connection_wait)
@@ -186,7 +181,7 @@ def report_ziptie():
     ax_agglomeration.set_xlabel("agglomeration energy", color=color, fontsize=fontsize_small)
 
     plt.show()
-'''
+"""
 
 if __name__ == "__main__":
     report()

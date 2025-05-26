@@ -13,8 +13,8 @@ color = "cadetblue"  # #5F9EA0, CSS color
 linewidth_ultra_thick = 24
 linewidth_thick = 2
 linewidth_med = 1
-linewidth_thin = .5
-linewidth_super_thin = .3
+linewidth_thin = 0.5
+linewidth_super_thin = 0.3
 
 fontsize_small = 8
 fontsize_med = 12
@@ -26,10 +26,10 @@ epsilon = 1e-8
 
 
 def blank_report(n_axes, figsize=figsize):
-    left_border = .18
-    right_border = .13
-    bottom_border = .38
-    top_border = .18
+    left_border = 0.18
+    right_border = 0.13
+    bottom_border = 0.38
+    top_border = 0.18
 
     fig = plt.figure(figsize=figsize, facecolor=background_color)
 
@@ -62,9 +62,9 @@ def blank_report(n_axes, figsize=figsize):
 
 
 def blank_images(n_axes, figsize=figsize):
-    left_border = .1
-    right_border = .08
-    bottom_border = .15
+    left_border = 0.1
+    right_border = 0.08
+    bottom_border = 0.15
     top_border = 0.08
 
     fig = plt.figure(figsize=figsize, facecolor=background_color)
@@ -147,12 +147,7 @@ def array_2D_report(arr, drop_zeros=False, name="", xlabel="", ylabel=""):
 
     fig = plt.figure(figsize=(fig_width, fig_height), facecolor=background_color)
 
-    ax_im = fig.add_axes((
-        left_im,
-        bottom_im,
-        right_im - left_im,
-        top_im - bottom_im
-    ))
+    ax_im = fig.add_axes((left_im, bottom_im, right_im - left_im, top_im - bottom_im))
     ax_im.set_facecolor(background_color)
     ax_im.tick_params(
         axis="both",
@@ -188,12 +183,9 @@ def array_2D_report(arr, drop_zeros=False, name="", xlabel="", ylabel=""):
     ax_im.set_ylabel(ylabel, color=color, fontsize=fontsize_small)
 
     ## Histogram of values
-    ax_hist = fig.add_axes((
-        left_hist,
-        bottom_hist,
-        right_hist - left_hist,
-        top_hist - bottom_hist
-    ))
+    ax_hist = fig.add_axes(
+        (left_hist, bottom_hist, right_hist - left_hist, top_hist - bottom_hist)
+    )
     ax_hist.set_facecolor(background_color)
     ax_hist.tick_params(
         axis="both",
@@ -219,12 +211,9 @@ def array_2D_report(arr, drop_zeros=False, name="", xlabel="", ylabel=""):
     ax_hist.set_ylabel("occurrences", color=color, fontsize=fontsize_small)
 
     ## Log count histogram of values
-    ax_log = fig.add_axes((
-        left_log,
-        bottom_log,
-        right_log - left_log,
-        top_log - bottom_log
-    ))
+    ax_log = fig.add_axes(
+        (left_log, bottom_log, right_log - left_log, top_log - bottom_log)
+    )
     ax_log.set_facecolor(background_color)
     ax_log.tick_params(
         axis="both",
@@ -266,7 +255,7 @@ def bin_avg(x, y, width):
     i_bin = 0
     while True:
         i_bin += 1
-        # If this is a partial bin, don't include it. 
+        # If this is a partial bin, don't include it.
         # Partial bins tend to have high variability and generate more
         # confusion from freakishly high or low values, than they provide
         # understanding.
@@ -274,10 +263,7 @@ def bin_avg(x, y, width):
             break
 
         x_bins.append(i_bin * width)
-        i_bin_x = np.where(np.logical_and(
-            x >= (i_bin - 1) * width,
-            x < i_bin * width
-        ))
+        i_bin_x = np.where(np.logical_and(x >= (i_bin - 1) * width, x < i_bin * width))
         if i_bin_x[0].size > 0:
             y_binned.append(np.mean(y[i_bin_x]))
         else:
@@ -288,7 +274,7 @@ def bin_avg(x, y, width):
 
 def left_title(ax, text):
     xmin, xmax = ax.get_xlim()
-    x_text = xmin - (xmax - xmin) * .13
+    x_text = xmin - (xmax - xmin) * 0.13
     ax.text(
         x_text,
         ax.get_ylim()[1],

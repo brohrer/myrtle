@@ -14,7 +14,6 @@ history_length_super_long = 1000
 
 
 def report_timing(db_name):
-
     n_plots = 8
     fig, axes_list = rc.blank_report(n_plots)
     # From bottom to top
@@ -26,16 +25,16 @@ def report_timing(db_name):
         ax_step,
         ax_long,
         ax_med,
-        ax_short
+        ax_short,
     ) = axes_list
 
     ax_world.set_xlabel("milliseconds", color=rc.color, fontsize=rc.fontsize_small)
 
     results = retrieve_timing(db_name, history_length_super_long)
 
-    plot_timing(ax_short, results[:int(history_length_short * 2), :])
-    plot_timing(ax_med, results[:int(history_length_med * 2), :])
-    plot_timing(ax_long, results[:int(history_length_long * 2), :])
+    plot_timing(ax_short, results[: int(history_length_short * 2), :])
+    plot_timing(ax_med, results[: int(history_length_med * 2), :])
+    plot_timing(ax_long, results[: int(history_length_long * 2), :])
 
     results_reversed = results[::-1, :]
     process = results_reversed[:, 0]
@@ -82,12 +81,13 @@ def report_timing(db_name):
 
     rc.plot_distribution(ax_step, step_duration, bins, "step total")
     rc.plot_distribution(
-        ax_handoff_agent, handoff_to_agent_duration, bins, "handoff to agent")
+        ax_handoff_agent, handoff_to_agent_duration, bins, "handoff to agent"
+    )
     rc.plot_distribution(ax_agent, agent_duration, bins, "agent step")
     rc.plot_distribution(
-        ax_handoff_world, handoff_to_world_duration, bins, "handoff to world")
+        ax_handoff_world, handoff_to_world_duration, bins, "handoff to world"
+    )
     rc.plot_distribution(ax_world, world_duration, bins, "world step")
-
 
     agent_success_rate = 1 - (world_count - agent_count) / world_count
     rounded_agent_success_rate = int(1000 * (agent_success_rate)) / 10.0
@@ -133,7 +133,7 @@ def convert_to_swimlane_axes(ax, n_lanes=None):
 
 def plot_timing(ax, results):
     process = results[:, 0]
-    step = np.array(results[:, 1], int)
+    # step = np.array(results[:, 1], int)
     ts_recv = np.array(results[:, 3], float) / 1000  # convert to ms
     ts_send = np.array(results[:, 4], float) / 1000  # convert to ms
     current_time = np.max(ts_send)
@@ -162,16 +162,18 @@ def plot_timing(ax, results):
             [x_end, y_max],
             [x_start, y_max],
         ]
-        ax.add_patch(patches.Polygon(
-            path,
-            linewidth=rc.linewidth_thin,
-            facecolor=rc.color,
-            edgecolor=rc.color,
-        ))
+        ax.add_patch(
+            patches.Polygon(
+                path,
+                linewidth=rc.linewidth_thin,
+                facecolor=rc.color,
+                edgecolor=rc.color,
+            )
+        )
         if proc == "world":
             ax.plot(
                 [ts_send[i], ts_send[i]],
-                [-.25, 2.25],
+                [-0.25, 2.25],
                 color=rc.color,
                 linewidth=rc.linewidth_thin,
                 linestyle="dotted",

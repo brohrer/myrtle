@@ -1,3 +1,4 @@
+import json
 import numpy as np
 from myrtle.agents.base_agent import BaseAgent
 from ziptie.algo import Ziptie
@@ -72,8 +73,6 @@ class QLearningZiptieCuriosity(BaseAgent):
 
         ziptie_update_frequency = 100
         if self.i_step % ziptie_update_frequency == 0:
-            import json
-            import time
             msg = json.dumps(
                 {
                     "step": self.i_step,
@@ -87,15 +86,7 @@ class QLearningZiptieCuriosity(BaseAgent):
                     "agglomeration": self.ziptie.agglomeration_energy.tolist(),
                 }
             )
-            start = time.time()
             self.mq.put("ziptie", msg)
-            # print("ziptie write time, ms", 1000 * (time.time() - start))
-            # print()
-            # print(features)
-            # print("total features", features.size)
-            # print("feature indices", np.where(features > 0)[0])
-            # print("nonzero features", np.where(features > 0)[0].size)
-            # print()
 
         self.features = np.zeros(self.n_max_features)
         self.features[: features.size] = features

@@ -63,7 +63,7 @@ def run(
     """
     print(f"""
 
-    Myrtle workbench version {version('myrtle')}
+    Myrtle workbench version {version("myrtle")}
       World: {World.name}
       Agent: {Agent.name}
 
@@ -282,7 +282,6 @@ def _reward_logging(dbname, agent, world, verbose):
         except KeyError:
             # Rewards not yet populated.
             pass
-
 
         log_data = {
             "process": "world",

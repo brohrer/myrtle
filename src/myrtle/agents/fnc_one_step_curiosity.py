@@ -1,7 +1,6 @@
 import os
 import numpy as np
 from cartographer.model import NaiveCartographer as Model
-from ziptie.algo import Ziptie
 from myrtle.agents.base_agent import BaseAgent
 from myrtle.config import log_directory
 
@@ -127,7 +126,7 @@ class FNCOneStepCuriosity(BaseAgent):
         # raised to the power of the exploitation factor,
         # scaled to match the average reward.
         self.curiosities += (
-            uncertainties ** self.exploitation_factor
+            uncertainties**self.exploitation_factor
             * self.sensors[:, np.newaxis]
             * self.curiosity_scale
             * self.reward_scale
@@ -143,21 +142,14 @@ class FNCOneStepCuriosity(BaseAgent):
             os.makedirs(os.path.join(log_directory, "fnc"), exist_ok=True)
 
             np.save(
-                os.path.join(log_directory, "fnc", "curiosities.npy"),
-                self.curiosities
+                os.path.join(log_directory, "fnc", "curiosities.npy"), self.curiosities
             )
-            np.save(
-                os.path.join(log_directory, "fnc", "predictions.npy"),
-                predictions
-            )
+            np.save(os.path.join(log_directory, "fnc", "predictions.npy"), predictions)
             np.save(
                 os.path.join(log_directory, "fnc", "predicted_reward.npy"),
                 predicted_rewards,
             )
-            np.save(
-                os.path.join(log_directory, "fnc", "sensors.npy"),
-                self.sensors
-            )
+            np.save(os.path.join(log_directory, "fnc", "sensors.npy"), self.sensors)
             np.save(
                 os.path.join(log_directory, "fnc", "previous_sensors.npy"),
                 self.previous_sensors,

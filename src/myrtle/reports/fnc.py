@@ -10,24 +10,16 @@ from myrtle.reports.report_config import (
 
 def report():
     print("reporting")
-    curiosities = np.load(
-        os.path.join(log_directory, "fnc", "curiosities.npy")
-    )
-    features = np.load(
-        os.path.join(log_directory, "fnc", "features.npy")
-    )
+    curiosities = np.load(os.path.join(log_directory, "fnc", "curiosities.npy"))
+    features = np.load(os.path.join(log_directory, "fnc", "features.npy"))
     predicted_reward = np.load(
         os.path.join(log_directory, "fnc", "predicted_reward.npy")
     )
-    predictions = np.load(
-        os.path.join(log_directory, "fnc", "predictions.npy")
-    )
-    previous_sensors = np.load(
-        os.path.join(log_directory, "fnc", "previous_sensors.npy")
-    )
-    sensors = np.load(
-        os.path.join(log_directory, "fnc", "sensors.npy")
-    )
+    predictions = np.load(os.path.join(log_directory, "fnc", "predictions.npy"))
+    # previous_sensors = np.load(
+    #     os.path.join(log_directory, "fnc", "previous_sensors.npy")
+    # )
+    sensors = np.load(os.path.join(log_directory, "fnc", "sensors.npy"))
 
     print()
     print("FNC")
@@ -59,7 +51,6 @@ def report():
     plt.show()
 
     print()
-
 
 
 if __name__ == "__main__":

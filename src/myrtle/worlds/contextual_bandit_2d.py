@@ -53,10 +53,7 @@ class ContextualBandit2D(BaseWorld):
         # Shuffle and sense the order of the bandits.
         x1 = np.random.choice(2)
         x2 = np.random.choice(2)
-        self.bandit_order = np.roll(
-            np.arange(self.n_actions),
-            int(2 * x1 + x2)
-        )
+        self.bandit_order = np.roll(np.arange(self.n_actions), int(2 * x1 + x2))
         self.sensors = np.zeros(4)
         self.sensors[x1] = 1.0
         self.sensors[x2 + 2] = 1.0
